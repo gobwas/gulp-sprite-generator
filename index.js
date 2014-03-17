@@ -110,13 +110,13 @@ var exportSprite = function(stream, options) {
         var sprite;
 
         sprite = new File({
-            path: options.spriteSheetPath,
-            contents: new Buffer(result.image)
+            path: options.spriteSheetName,
+            contents: new Buffer(result.image, 'binary')
         });
 
         stream.push(sprite);
 
-        log('Spritesheet', options.spriteSheetPath, 'has been created');
+        log('Spritesheet', options.spriteSheetName, 'has been created');
 
         return result;
     }
@@ -127,13 +127,13 @@ var exportStylesheet = function(stream, options) {
         var stylesheet;
 
         stylesheet = new File({
-            path: options.styleSheetPath,
+            path: options.styleSheetName,
             contents: new Buffer(content)
         });
 
         stream.push(stylesheet);
 
-        log('Stylesheet', options.styleSheetPath, 'has been created');
+        log('Stylesheet', options.styleSheetName, 'has been created');
     }
 };
 
@@ -142,7 +142,7 @@ var mapSpriteProperties = function(images, options) {
         return _.map(result.coordinates, function(coordinates, filePath) {
             return _.merge(_.find(images, {filePath: filePath}), {
                 coordinates: coordinates,
-                spritePath: options.spriteSheetPath
+                spritePath: options.spriteSheetPath ? options.spriteSheetPath + "/" + options.spriteSheetName : options.spriteSheetName
             });
         });
     }
@@ -160,13 +160,14 @@ module.exports = function(options) { 'use strict';
         exportOpts: {},
 
         baseUrl:    './',
-        styleSheetPath:  null,
+        styleSheetName:  null,
 
+        spriteSheetName: null,
         spriteSheetPath: null
     }, options || {});
 
     // check necessary properties
-    ['spriteSheetPath'].forEach(function(property) {
+    ['spriteSheetName'].forEach(function(property) {
         if (!options[property]) {
             throw new gutil.PluginError(PLUGIN_NAME, '`' + property + '` is required');
         }
@@ -191,8 +192,8 @@ module.exports = function(options) { 'use strict';
         if (file.isBuffer()) {
             content = file.contents.toString();
 
-            if (!options.styleSheetPath) {
-                options.styleSheetPath = path.basename(file.path);
+            if (!options.styleSheetName) {
+                options.styleSheetName = path.basename(file.path);
             }
 
             getImages(file, content, options)
