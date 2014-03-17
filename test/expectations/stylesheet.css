@@ -1,0 +1,12 @@
+.a {
+    background-image: url('sprite.png');
+    background-position: -0px -0px;
+    background-repeat: repeat-x;
+    background-size: 100px 100px;
+}
+.b {
+    background-image: url('sprite.png');
+    background-position: -0px -25px;
+    background-repeat: repeat-x;
+    background-size: 100px 100px;
+}

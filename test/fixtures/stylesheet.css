@@ -1,0 +1,10 @@
+.a {
+    background-image: url(/a.png);
+    background-repeat: repeat-x;
+    background-size: 100px 100px;
+}
+.b {
+    background-image: url("/b.png");
+    background-repeat: repeat-x;
+    background-size: 100px 100px;
+}
