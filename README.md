@@ -76,7 +76,7 @@ More detailed explanation is below.
 Type: `String`
 Default value: `null`
 
-Tha last necessary parameter. Defines which *base* will have name of the output sprite. Base means that if you will
+The one and last necessary parameter. Defines which *base* will have the name of the output sprite. Base means that if you will
 group your sprites by some criteria, name will change.
 
 #### options.spriteSheetPath
@@ -101,7 +101,7 @@ Defines where to find relatively defined image references in the input styleshee
 Type: `Boolean`
 Default value: `true`
 
-Defines whether or not to search for retina mark in the filename. If `true` then it will look for @{number}x syntax.
+Defines whether or not to search for retina mark in the filename. If `true` then it will look for `@{number}x` syntax.
 For example: `image@2x.png`.
 
 #### options.filter
@@ -118,7 +118,7 @@ Default value: `[]`
 
 Defines logic of how to group images found in the input stylesheet. Each grouper called with image object, explained below. Each filter must return `String|Null` or
 [thenable `Promise`](https://github.com/promises-aplus/promises-spec), that will be resolved with `String|Null`. Each grouper
-applies in async.
+applies in series.
 
 
 ### Filtering and grouping
@@ -127,7 +127,7 @@ Sprite generator can filter and group images from the input stylesheet.
 
 Built in filters:
 - based on meta `skip` boolean flag;
-- based on fs.exists method to check, whether file exists or not.
+- based on `fs.exists` method to check, whether file exists or not.
 
 Built in groupers:
 - based on @2x image naming syntax, will produce `sprite.@{number}x.png` naming. (`@{number}x` image group).
@@ -145,7 +145,7 @@ url         | `String`   | Url for image fount in the input stylesheet
 path        | `String`   | Resolved path for the image
 group       | `String[]` | List of string, representing groups of image
 isRetina    | `Boolean`  | Boolean flag of retina image (@2x syntax)
-retinaRatio | `Number`   | Ratio of retina image (@*2*x, @*3*x ...)
+retinaRatio | `Number`   | Ratio of retina image (@2x, @3x => 2, 3)
 meta        | `Object`   | Object of meta properties, defined in doc block (will explain below).
 
 
@@ -153,7 +153,9 @@ meta        | `Object`   | Object of meta properties, defined in doc block (will
 
 You can also define some properties for the filters and groupers in doc block via this syntax:
 
-{css definition} /* @meta {valid json} */
+`{css definition} /* @meta {valid json} */`
+
+Example:
 
 ```css
 
@@ -163,7 +165,7 @@ You can also define some properties for the filters and groupers in doc block vi
 
 ```
 
-*Important!* Only object in `sprite` property of meta will be available in image object for filters and groupers.
+***Important!*** Only object in `sprite` property of meta will be available in image object for filters and groupers.
 
 
 ### Flexible example
@@ -187,7 +189,7 @@ gulp.task('sprites', function() {
 
             filter: [
                 // this is a copy of built in filter of meta skip
-                // do not forget to set it up in your stylesheets
+                // do not forget to set it up in your stylesheets using doc block /* */
                 function(image) {
                     return !image.meta.skip;
                 }
