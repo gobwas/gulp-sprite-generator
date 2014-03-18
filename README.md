@@ -50,11 +50,11 @@ options and plugin specific options.
 
 Property     | Necessary | Type     | Plugin default value
 -------------|-----------|----------|---------------------
-[engine]     | no        | `String` | "pngsmith"
-[algorithm]  | no        | `String` | "top-down"
-[padding]    | no        | `Number` | 0
-[engineOpts] | no        | `Object` | {}
-[exportOpts] | no        | `Object` | {}
+[engine]     | no        | `String` | `"pngsmith"`
+[algorithm]  | no        | `String` | `"top-down"`
+[padding]    | no        | `Number` | `0`
+[engineOpts] | no        | `Object` | `{}`
+[exportOpts] | no        | `Object` | `{}`
 
 More detailed explanation you can find on the [official page of spritesmith](https://github.com/Ensighten/spritesmith).
 
@@ -62,13 +62,13 @@ More detailed explanation you can find on the [official page of spritesmith](htt
 
 Property          | Necessary | Type         | Plugin default value
 ------------------|-----------|--------------|-----------
-spriteSheetName   | **yes**   | `String`     | null
-[spriteSheetPath] | no        | `String`     | null
-[styleSheetName]  | np        | `String`     | null
-[baseUrl]         | no        | `String`     | "./"
-[retina]          | no        | `Boolean`    | true
-[filter]          | no        | `Function[]` | []
-[groupBy]         | no        | `Function[]` | []
+spriteSheetName   | **yes**   | `String`     | `null`
+[spriteSheetPath] | no        | `String`     | `null`
+[styleSheetName]  | np        | `String`     | `null`
+[baseUrl]         | no        | `String`     | `"./"`
+[retina]          | no        | `Boolean`    | `true`
+[filter]          | no        | `Function[]` | `[]`
+[groupBy]         | no        | `Function[]` | `[]`
 
 More detailed explanation is below.
 
