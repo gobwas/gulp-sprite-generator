@@ -1,0 +1,11 @@
+@media (min-resolution: 2dppx) {
+.a {
+    background-image: url("/a@2x.png");
+    background-size: 25px 25px;
+}
+
+.b {
+    background-image: url("/b@2x.png");
+    background-size: 25px 25px;
+}
+}

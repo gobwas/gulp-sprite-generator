@@ -1,0 +1,8 @@
+.a {
+    background-image: url(/a.png);
+}
+.b {
+    background-image: url("sprite.png");
+    background-position: -0px -0px;
+    background-size: 25px 25px!important;
+}
