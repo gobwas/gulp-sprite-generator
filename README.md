@@ -29,10 +29,9 @@ gulp.task('sprites', function() {
 
 	spriteOutput = gulp.src("./src/css/*.css")
 		.pipe(sprite({
-            baseUrl:         "./",
+            baseUrl:         "./src/image",
             spriteSheetName: "sprite.png",
-            spriteSheetPath: "/dist/image",
-            styleSheetName:  "stylesheet.css"
+            spriteSheetPath: "/dist/image"
 		});
 
     spriteOutput.css.pipe(gulp.dest("./dist/css"));
@@ -44,32 +43,32 @@ Of course you may need to have more flexible configuration for spriting. And thi
 
 ## Options
 
-First of all, sprite generator parameters is an object, that mix [spritesmith](https://github.com/Ensighten/spritesmith)
-parameters and plugin specific options.
+Sprite generator options is an object, that mix [spritesmith](https://github.com/Ensighten/spritesmith)
+options and plugin specific options.
 
-Spritesmith parameters are:
+**Spritesmith parameters** *(all is optional)*:
 
-Parameter    | Necessary | Type   | Plugin default value
--------------|-----------|--------|---------------------
-[engine]     | no        | String | "pngsmith"
-[algorithm]  | no        | String | "top-down"
-[padding]    | no        | Number | 0
-[engineOpts] | no        | Object | {}
-[exportOpts] | no        | Object | {}
+Property     | Necessary | Type     | Plugin default value
+-------------|-----------|----------|---------------------
+[engine]     | no        | `String` | "pngsmith"
+[algorithm]  | no        | `String` | "top-down"
+[padding]    | no        | `Number` | 0
+[engineOpts] | no        | `Object` | {}
+[exportOpts] | no        | `Object` | {}
 
 More detailed explanation you can find on the [official page of spritesmith](https://github.com/Ensighten/spritesmith).
 
-Plugin specific options are:
+**Plugin options** are:
 
-Parameter         | Necessary | Type       | Plugin default value
-------------------|-----------|------------|-----------
-spriteSheetName   | *yes*     | String     | null
-[spriteSheetPath] | no        | String     | null
-[styleSheetName]  | np        | String     | null
-[baseUrl]         | no        | String     | "./"
-[retina]          | no        | Boolean    | true
-[filter]          | no        | Function[] | []
-[groupBy]         | no        | Function[] | []
+Property          | Necessary | Type         | Plugin default value
+------------------|-----------|--------------|-----------
+spriteSheetName   | **yes**   | `String`     | null
+[spriteSheetPath] | no        | `String`     | null
+[styleSheetName]  | np        | `String`     | null
+[baseUrl]         | no        | `String`     | "./"
+[retina]          | no        | `Boolean`    | true
+[filter]          | no        | `Function[]` | []
+[groupBy]         | no        | `Function[]` | []
 
 More detailed explanation is below.
 
@@ -77,7 +76,7 @@ More detailed explanation is below.
 Type: `String`
 Default value: `null`
 
-Tha last necessary parameter. Defines which **base** will have name of the output sprite. Base means that if you will
+Tha last necessary parameter. Defines which *base* will have name of the output sprite. Base means that if you will
 group your sprites by some criteria, name will change.
 
 #### options.spriteSheetPath
@@ -139,15 +138,15 @@ You can of course define your own filters or groupers. It will all based on main
 
 Every filter or grouper is called with `image` object, that have these properties:
 
-Property    | Type     | Explanation
-------------|----------|---------------------
-replacement | String   | String found by pattern in the input stylesheet
-url         | String   | Url for image fount in the input stylesheet
-path        | String   | Resolved path for the image
-group       | String[] | List of string, representing groups of image
-isRetina    | Boolean  | Boolean flag of retina image (@2x syntax)
-retinaRatio | Number   | Ratio of retina image (@*2*x, @*3*x ...)
-meta        | Object   | Object of meta properties, defined in doc block (will explain below).
+Property    | Type       | Explanation
+------------|------------|---------------------
+replacement | `String`   | String, found by pattern in the input stylesheet
+url         | `String`   | Url for image fount in the input stylesheet
+path        | `String`   | Resolved path for the image
+group       | `String[]` | List of string, representing groups of image
+isRetina    | `Boolean`  | Boolean flag of retina image (@2x syntax)
+retinaRatio | `Number`   | Ratio of retina image (@*2*x, @*3*x ...)
+meta        | `Object`   | Object of meta properties, defined in doc block (will explain below).
 
 
 ### Doc block meta properties
