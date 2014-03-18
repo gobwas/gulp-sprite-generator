@@ -31,8 +31,7 @@ var getImages = (function() {
     filePathRegex = new RegExp('["\']?([\\w\\d\\s!:./\\-\\_@]*\\.[\\w?#]+)["\']?', 'ig');
 
     return function(file, content, options) {
-        var deferred = Q.defer(),
-            reference, images, chain,
+        var reference, images, chain,
             retina;
 
         images = [];
@@ -95,48 +94,51 @@ var getImages = (function() {
         imageRegex.lastIndex = 0;
 
         // remove nulls
-        images = _.filter(images);
+        images = Q(_.filter(images));
 
-        // apply user filters
-        if (_.isArray(options.filter)) {
-            chain = _.chain(images);
-
-            options.filter.forEach(function(filter) {
-                chain = chain.filter(filter);
-            });
-
-            images = chain.value();
-        }
-
-        // filter not existing images
-        async.filter(images, function(image, ok) {
-            fs.exists(image.path, function(exists) {
-                !exists && log(image.path + ' has been skipped as it does not exist!');
-                ok(exists);
-            });
-        }, deferred.resolve);
-
-        return deferred.promise
+        return images
+            // apply user filters
             .then(function(images) {
-                // apply user group processors
-                if (_.isArray(options.groupBy)) {
-                    chain = _.chain(images);
+                var chain;
 
-                    options.groupBy.forEach(function(groupBy) {
-                        chain.map(function(image) {
-                            var mapped, group;
+                chain = Q(images);
 
-                            mapped = _.clone(image);
-                            (group = groupBy(image)) && mapped.group.push(group);
+                options.filter.forEach(function(filter) {
+                    chain = chain.then(function(images) {
+                        var deferred = Q.defer();
 
-                            return mapped;
-                        });
+                        async.filter(images, function(image, ok) {
+                            Q(filter(image)).then(ok);
+                        }, deferred.resolve);
+
+                        return deferred.promise;
                     });
+                });
 
-                    image = chain.value();
-                }
+                return chain;
+            })
+            // apply user group processors
+            .then(function(images) {
+                var chain;
 
-                return images;
+                chain = Q(images);
+
+                options.groupBy.forEach(function(groupBy) {
+                    chain = chain
+                        .then(function(images) {
+                            return Q.nfcall(async.map, images, function(image, done) {
+                                Q(groupBy(image))
+                                    .then(function(group) {
+                                        return group && image.group.push(group);
+                                    })
+                                    .then(function() {
+                                        done(null, image);
+                                    });
+                            });
+                        });
+                });
+
+                return chain;
             });
     }
 })();
@@ -319,6 +321,18 @@ module.exports = function(options) { 'use strict';
     if (_.isFunction(options.groupBy)) {
         options.groupBy = [options.groupBy]
     }
+
+    // add not existing filter
+    options.filter.push(function(image) {
+        var deferred = Q.defer();
+
+        fs.exists(image.path, function(exists) {
+            !exists && log(image.path + ' has been skipped as it does not exist!');
+            deferred.resolve(exists);
+        });
+
+        return deferred.promise;
+    });
 
     // add retina grouper if needed
     if (options.retina) {
