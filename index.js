@@ -24,7 +24,7 @@ var log = function() {
 var getImages = (function() {
     var httpRegex, imageRegex, filePathRegex, pngRegex, retinaRegex;
 
-    imageRegex    = new RegExp('background-image:[\\s]?url\\(["\']?([\\w\\d\\s!:./\\-\\_@]*\\.[\\w?#]+)["\']?\\)[^;]*\\;(?: \\/\\* @sprite (\\{[^}]*\\}) \\*\\/)?', 'ig');
+    imageRegex    = new RegExp('background-image:[\\s]?url\\(["\']?([\\w\\d\\s!:./\\-\\_@]*\\.[\\w?#]+)["\']?\\)[^;]*\\;(?:\\s*\\/\\*\\s*@meta\\s*(\\{.*\\})\\s*\\*\\/)?', 'ig');
     retinaRegex   = new RegExp('@(\\d)x\\.[a-z]{3,4}$', 'ig');
     httpRegex     = new RegExp('http[s]?', 'ig');
     pngRegex      = new RegExp('\\.png$', 'ig');
@@ -43,10 +43,11 @@ var getImages = (function() {
 
             image = {
                 replacement: reference[0],
-                url: (url = reference[1]),
-                group: [],
-                isRetina: false,
-                retinaRatio: 1
+                url:         (url = reference[1]),
+                group:       [],
+                isRetina:    false,
+                retinaRatio: 1,
+                meta:        {}
             };
 
             if (httpRegex.test(url)) {
@@ -61,7 +62,8 @@ var getImages = (function() {
 
             if (meta = reference[2]) {
                 try {
-                    image.meta = JSON.parse(meta);
+                    meta = JSON.parse(meta);
+                    meta.sprite && (image.meta = meta.sprite);
                 } catch (err) {
                     log(colors.cyan(basename) + ' > ' + colors.white('Can not parse meta json for ' + url) + ': "' + colors.red(err) + '"');
                 }
@@ -172,11 +174,19 @@ var callSpriteSmithWith = (function() {
                 return tmp.join(GROUP_DELIMITER);
             })
             .map(function(images, tmp) {
-                var config;
+                var config, ratio;
 
                 config = _.merge({}, options, {
                     src: _.pluck(images, 'path')
                 });
+
+                // enlarge padding, if its retina
+                if (_.every(images, function(image) {return image.isRetina})) {
+                    ratio = _.chain(images).flatten('retinaRatio').unique().value();
+                    if (ratio.length == 1) {
+                        config.padding = config.padding * ratio[0];
+                    }
+                }
 
                 return Q.nfcall(spritesmith, config).then(function(result) {
                     tmp = tmp.split(GROUP_DELIMITER);
@@ -200,7 +210,7 @@ var updateReferencesIn = (function() {
 
     template = _.template(
         'background-image: url("<%= spriteSheetPath %>");\n    ' +
-        'background-position: -<%= coordinates.x %>px -<%= coordinates.y %>px;\n    ' +
+        'background-position: -<%= isRetina ? (coordinates.x / retinaRatio) : coordinates.x %>px -<%= isRetina ? (coordinates.y / retinaRatio) : coordinates.y %>px;\n    ' +
         'background-size: <%= isRetina ? (properties.width / retinaRatio) : properties.width %>px <%= isRetina ? (properties.height / retinaRatio) : properties.height %>px!important;'
     );
 
@@ -290,11 +300,16 @@ module.exports = function(options) { 'use strict';
 
     options = _.merge({
         src:        [],
-        engine:     "auto",
+        engine:     "pngsmith", //auto
         algorithm:  "top-down",
         padding:    0,
         engineOpts: {},
-        exportOpts: {},
+        exportOpts: {
+
+        },
+        imgOpts: {
+            timeout: 30000
+        },
 
         baseUrl:         './',
         retina:          true,
@@ -322,6 +337,12 @@ module.exports = function(options) { 'use strict';
         options.groupBy = [options.groupBy]
     }
 
+    // add meta skip filter
+    options.filter.unshift(function(image) {
+        image.meta.skip && log(image.path + ' has been skipped as it meta declares to skip');
+        return !image.meta.skip;
+    });
+
     // add not existing filter
     options.filter.push(function(image) {
         var deferred = Q.defer();
@@ -338,7 +359,7 @@ module.exports = function(options) { 'use strict';
     if (options.retina) {
         options.groupBy.unshift(function(image) {
             if (image.isRetina) {
-                return "retina-" + image.retinaRatio + "x";
+                return "@" + image.retinaRatio + "x";
             }
 
             return null;

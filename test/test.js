@@ -103,7 +103,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.img.on('data', function (file) {
             try {
-                assert.equal(file.path, 'sprite.retina-2x.png');
+                assert.equal(file.path, 'sprite.@2x.png');
             } catch (err) {
                 errors.push(err);
             }
@@ -270,15 +270,16 @@ describe('gulp-sprite-generator', function(){
         };
 
         meta = {
-            some: true,
-            prop: 1,
-            yes: "no"
+            sprite: {
+                some: true,
+                prop: 1,
+                yes: "no"
+            }
         };
 
         config.filter.push(function(image) {
             try {
-                assert.isObject(image.meta);
-                assert.notStrictEqual(image.meta, meta);
+                assert.deepEqual(image.meta, meta.sprite);
             } catch (err) {
                 errors.push(err);
             }
@@ -288,8 +289,8 @@ describe('gulp-sprite-generator', function(){
 
         stream.write(new File({
             base:     test,
-            path:     path.resolve(fixtures, 'stylesheet.css'),
-            contents: new Buffer('.a { background-image: url("sprite.retina-2x.png"); /* @sprite ' + JSON.stringify(meta) + ' */ }')
+            path:     path.resolve(fixtures, 'stylesheetdddd.css'),
+            contents: new Buffer('.a { background-image: url("sprite.retina-2x.png"); /* @meta ' + JSON.stringify(meta) + ' */ }')
         }));
 
         stream.on('finish', function() {
