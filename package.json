@@ -1,6 +1,6 @@
 {
     "name": "gulp-sprite-generator",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "Plugin that generate sprites from your stylesheets (using spritesmith) and then updates the references.",
     "main": "index.js",
     "test": "mocha test",
@@ -8,12 +8,18 @@
         "gulpplugin",
         "spritesheet",
         "sprite",
+        "png",
         "stylesheet",
         "spritesmith",
         "css"
     ],
-    "author": "Sergey Kamardin",
+    "author": {
+        "name": "Sergey Kamardin",
+        "email": "gobwas@gmail.com",
+        "url": "http://github.com/gobwas"
+    },
     "license": "MIT",
+    "repository": "https://github.com/gobwas/gulp-sprite-generator",
     "devDependencies": {
         "mocha": "*",
         "chai": "*",
