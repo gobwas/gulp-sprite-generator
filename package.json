@@ -23,7 +23,9 @@
     "devDependencies": {
         "mocha": "*",
         "chai": "*",
-        "gulp": "*"
+        "gulp": "*",
+        "gulp-if": "*",
+        "gulp-rev": "*"
     },
     "dependencies": {
         "spritesmith": "^0.18.0",

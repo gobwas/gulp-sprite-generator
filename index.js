@@ -8,6 +8,7 @@ var path        = require('path'),
     async       = require('async'),
     Q           = require('q'),
     through     = require('through2'),
+    Readable    = require('stream').Readable,
 
     PLUGIN_NAME = "gulp-sprite-generator";
 
@@ -246,7 +247,7 @@ var exportSprites = (function() {
 
     return function(stream, options) {
         return function(results) {
-            return results.map(function(result) {
+            results = results.map(function(result) {
                 var sprite;
 
                 result.path = makeSpriteSheetPath(options.spriteSheetName, result.group);
@@ -257,12 +258,17 @@ var exportSprites = (function() {
                 });
 
                 stream.push(sprite);
+//                stream.write(sprite);
 
                 log('Spritesheet', result.path, 'has been created');
 
 
                 return result;
             });
+
+            stream.push(null);
+
+            return results;
         }
     }
 })();
@@ -277,6 +283,8 @@ var exportStylesheet = function(stream, options) {
         });
 
         stream.push(stylesheet);
+        stream.push(null);
+//        stream.write(stylesheet);
 
         log('Stylesheet', options.styleSheetName, 'has been created');
     }
@@ -368,8 +376,21 @@ module.exports = function(options) { 'use strict';
     }
 
     // create output streams
-    styleSheetStream = through.obj();
-    spriteSheetStream = through.obj();
+//    styleSheetStream = through.obj(function(file, enc, done) {
+//        this.push(file);
+//        done();
+//    }, function(cb) {console.log('_flush'); cb();});
+//    spriteSheetStream = through.obj(function(file, enc, done) {
+//        this.push(file);
+//        done();
+//    }, function(cb) {console.log('_flush'); cb();});
+//
+    function noop(){};
+    styleSheetStream = new Readable({objectMode: true});
+    spriteSheetStream = new Readable({objectMode: true});
+    spriteSheetStream._read = styleSheetStream._read = noop;
+
+
 
     stream = through.obj(function(file, enc, done) {
         var content;
@@ -399,6 +420,11 @@ module.exports = function(options) { 'use strict';
                         .then(updateReferencesIn(content))
                         .then(exportStylesheet(styleSheetStream, options))
                         .then(function() {
+                            stream.push(file);
+//                            styleSheetStream.end();
+//                            spriteSheetStream.end();
+//                            styleSheetStream.push(null);
+//                            spriteSheetStream.push(null);
                             done();
                         })
                         .catch(function(err) {
@@ -411,7 +437,7 @@ module.exports = function(options) { 'use strict';
             return null;
         } else {
             this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'Something went wrong!'));
-            return callback();
+            return done();
         }
     });
 

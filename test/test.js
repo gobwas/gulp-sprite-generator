@@ -1,8 +1,11 @@
-var fs     = require('fs'),
-    assert = require('chai').assert,
-    File   = require('vinyl'),
-    path   = require('path'),
-    sprite = require('./../index');
+var fs      = require('fs'),
+    assert  = require('chai').assert,
+    File    = require('vinyl'),
+    path    = require('path'),
+    through = require('through2'),
+    gulpif  = require("gulp-if"),
+    rev     = require("gulp-rev"),
+    sprite  = require('./../index');
 
 describe('gulp-sprite-generator', function(){
 
@@ -294,6 +297,114 @@ describe('gulp-sprite-generator', function(){
         }));
 
         stream.on('finish', function() {
+            done(errors[0]);
+        });
+
+        stream.end();
+    });
+
+    it("Should pipe properly", function(done) {
+        var config, stream, errors, stylesheet,
+            piped;
+
+        piped = {
+            img: 0,
+            css: 0,
+            main: 0
+        };
+
+        stylesheet = {
+            fixture: path.resolve(fixtures, 'stylesheet.css'),
+            expectation: path.resolve(expectations, 'stylesheet.css')
+        };
+
+        errors = [];
+
+        config = {
+            baseUrl:         fixtures,
+            spriteSheetName:  "sprite.png",
+            styleSheetName: "stylesheet.sprite.css",
+            spriteSheetPath: null,
+            filter: [],
+            groupBy: []
+        };
+
+        stream = sprite(config);
+
+        stream.img.on('data', function (file) {
+            try {
+                assert.equal(file.path, config.spriteSheetName);
+            } catch (err) {
+                errors.push(err);
+            }
+        });
+
+        stream.css.on('data', function (file) {
+            try {
+                assert.equal(file.contents.toString(), fs.readFileSync(stylesheet.expectation).toString());
+                assert.equal(file.path, config.styleSheetName);
+            } catch (err) {
+                errors.push(err);
+            }
+        });
+
+        stream.write(new File({
+            base:     test,
+            path:     stylesheet.fixture,
+            contents: new Buffer(fs.readFileSync(stylesheet.fixture))
+        }));
+
+
+        stream.pipe(through.obj(function(file, enc, done) {
+            piped.main++;
+            try {
+                assert.instanceOf(file, File, "Piped in a main stream obj is not a File");
+            } catch (err) {
+                errors.push(err);
+            }
+        }));
+
+        stream.css.pipe(through.obj(function(file, enc, done) {
+            piped.css++;
+            try {
+                assert.instanceOf(file, File, "Piped in a css stream obj is not a File");
+            } catch (err) {
+                errors.push(err);
+            }
+        }));
+
+        stream.img.pipe(through.obj(function(file, enc, done) {
+            piped.img++;
+            try {
+                assert.instanceOf(file, File, "Piped in a img stream obj is not a File");
+            } catch (err) {
+                errors.push(err);
+            }
+        }));
+
+//        stream.img
+//            .pipe(rev())
+//            .pipe(through.obj(function(file, enc, done) {
+//                console.log('revision', file.path);
+//                this.push(file);
+//                done();
+//            }))
+//            .pipe(rev.manifest())
+//            .pipe(through.obj(function(file, enc, done) {
+//                console.log('manifest', file);
+//                this.push(file);
+//                done();
+//            }));
+
+        stream.on('finish', function() {
+            try {
+                assert.equal(1, piped.img,  "No piped data in img stream");
+                assert.equal(1, piped.css,  "No piped data in css stream");
+                assert.equal(1, piped.main, "No piped data in main stream");
+            } catch (err) {
+                errors.push(err);
+            }
+
             done(errors[0]);
         });
 
