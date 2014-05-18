@@ -76,10 +76,11 @@ var getImages = (function() {
 
             filePath = filePathRegex.exec(url)[0].replace(/['"]/g, '');
 
-            if(filePath.charAt(0) === '/') {
+            // if url to image is relative
+            if(filePath.charAt(0) === "/") {
                 filePath = path.resolve(options.baseUrl + filePath);
             } else {
-                filePath = path.resolve(file.path.substring(0, file.path.lastIndexOf("/")), filePath);
+                filePath = path.resolve(file.path.substring(0, file.path.lastIndexOf(path.sep)), filePath);
             }
 
             image.path = filePath;
