@@ -3,8 +3,8 @@ var fs      = require('fs'),
     File    = require('vinyl'),
     path    = require('path'),
     through = require('through2'),
-    gulpif  = require("gulp-if"),
-    rev     = require("gulp-rev"),
+//    gulpif  = require("gulp-if"),
+//    rev     = require("gulp-rev"),
     sprite  = require('./../index');
 
 describe('gulp-sprite-generator', function(){
