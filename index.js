@@ -8,6 +8,7 @@ var path        = require('path'),
     async       = require('async'),
     Q           = require('q'),
     through     = require('through2'),
+    Readable    = require('stream').Readable,
 
     PLUGIN_NAME = "gulp-sprite-generator";
 
@@ -76,10 +77,11 @@ var getImages = (function() {
 
             filePath = filePathRegex.exec(url)[0].replace(/['"]/g, '');
 
-            if(filePath.charAt(0) === '/') {
+            // if url to image is relative
+            if(filePath.charAt(0) === "/") {
                 filePath = path.resolve(options.baseUrl + filePath);
             } else {
-                filePath = path.resolve(file.path.substring(0, file.path.lastIndexOf("/")), filePath);
+                filePath = path.resolve(file.path.substring(0, file.path.lastIndexOf(path.sep)), filePath);
             }
 
             image.path = filePath;
@@ -245,7 +247,7 @@ var exportSprites = (function() {
 
     return function(stream, options) {
         return function(results) {
-            return results.map(function(result) {
+            results = results.map(function(result) {
                 var sprite;
 
                 result.path = makeSpriteSheetPath(options.spriteSheetName, result.group);
@@ -262,6 +264,11 @@ var exportSprites = (function() {
 
                 return result;
             });
+
+            // end stream
+            stream.push(null);
+
+            return results;
         }
     }
 })();
@@ -276,6 +283,9 @@ var exportStylesheet = function(stream, options) {
         });
 
         stream.push(stylesheet);
+
+        // end stream
+        stream.push(null);
 
         log('Stylesheet', options.styleSheetName, 'has been created');
     }
@@ -367,8 +377,10 @@ module.exports = function(options) { 'use strict';
     }
 
     // create output streams
-    styleSheetStream = through.obj();
-    spriteSheetStream = through.obj();
+    function noop(){}
+    styleSheetStream = new Readable({objectMode: true});
+    spriteSheetStream = new Readable({objectMode: true});
+    spriteSheetStream._read = styleSheetStream._read = noop;
 
     stream = through.obj(function(file, enc, done) {
         var content;
@@ -398,6 +410,8 @@ module.exports = function(options) { 'use strict';
                         .then(updateReferencesIn(content))
                         .then(exportStylesheet(styleSheetStream, options))
                         .then(function() {
+                            // pipe source file
+                            stream.push(file);
                             done();
                         })
                         .catch(function(err) {
@@ -410,7 +424,7 @@ module.exports = function(options) { 'use strict';
             return null;
         } else {
             this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'Something went wrong!'));
-            return callback();
+            return done();
         }
     });
 
