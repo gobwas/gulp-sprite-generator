@@ -258,7 +258,6 @@ var exportSprites = (function() {
                 });
 
                 stream.push(sprite);
-//                stream.write(sprite);
 
                 log('Spritesheet', result.path, 'has been created');
 
@@ -266,6 +265,7 @@ var exportSprites = (function() {
                 return result;
             });
 
+            // end stream
             stream.push(null);
 
             return results;
@@ -283,8 +283,9 @@ var exportStylesheet = function(stream, options) {
         });
 
         stream.push(stylesheet);
+
+        // end stream
         stream.push(null);
-//        stream.write(stylesheet);
 
         log('Stylesheet', options.styleSheetName, 'has been created');
     }
@@ -376,21 +377,10 @@ module.exports = function(options) { 'use strict';
     }
 
     // create output streams
-//    styleSheetStream = through.obj(function(file, enc, done) {
-//        this.push(file);
-//        done();
-//    }, function(cb) {console.log('_flush'); cb();});
-//    spriteSheetStream = through.obj(function(file, enc, done) {
-//        this.push(file);
-//        done();
-//    }, function(cb) {console.log('_flush'); cb();});
-//
-    function noop(){};
+    function noop(){}
     styleSheetStream = new Readable({objectMode: true});
     spriteSheetStream = new Readable({objectMode: true});
     spriteSheetStream._read = styleSheetStream._read = noop;
-
-
 
     stream = through.obj(function(file, enc, done) {
         var content;
@@ -420,11 +410,8 @@ module.exports = function(options) { 'use strict';
                         .then(updateReferencesIn(content))
                         .then(exportStylesheet(styleSheetStream, options))
                         .then(function() {
+                            // pipe source file
                             stream.push(file);
-//                            styleSheetStream.end();
-//                            spriteSheetStream.end();
-//                            styleSheetStream.push(null);
-//                            spriteSheetStream.push(null);
                             done();
                         })
                         .catch(function(err) {
