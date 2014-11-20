@@ -6,7 +6,6 @@
     "test": "mocha test",
     "keywords": [
         "gulpplugin",
-        "gulpfriendly",
         "spritesheet",
         "sprite",
         "generator",
