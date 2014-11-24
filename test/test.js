@@ -7,6 +7,11 @@ var fs      = require('fs'),
 //    rev     = require("gulp-rev"),
     sprite  = require('./../index');
 
+
+function clearStr(str) {
+    return str.replace(/[\s,\r,\n,\t]/gi, "");
+}
+
 describe('gulp-sprite-generator', function(){
 
     var test, fixtures, expectations;
@@ -55,7 +60,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.css.on('data', function (file) {
             try {
-                assert.equal(file.contents.toString(), fs.readFileSync(stylesheet.expectation).toString());
+                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
                 assert.equal(file.path, config.styleSheetName);
             } catch (err) {
                 errors.push(err);
@@ -114,7 +119,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.css.on('data', function (file) {
             try {
-                assert.equal(file.contents.toString(), fs.readFileSync(stylesheet.expectation).toString());
+                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
                 assert.equal(file.path, config.styleSheetName);
             } catch (err) {
                 errors.push(err);
@@ -177,7 +182,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.css.on('data', function (file) {
             try {
-                assert.equal(file.contents.toString(), fs.readFileSync(stylesheet.expectation).toString());
+                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
                 assert.equal(file.path, config.styleSheetName);
             } catch (err) {
                 errors.push(err);
@@ -240,7 +245,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.css.on('data', function (file) {
             try {
-                assert.equal(file.contents.toString(), fs.readFileSync(stylesheet.expectation).toString());
+                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
                 assert.equal(file.path, config.styleSheetName);
             } catch (err) {
                 errors.push(err);
@@ -341,7 +346,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.css.on('data', function (file) {
             try {
-                assert.equal(file.contents.toString(), fs.readFileSync(stylesheet.expectation).toString());
+                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
                 assert.equal(file.path, config.styleSheetName);
             } catch (err) {
                 errors.push(err);
