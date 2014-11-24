@@ -32,19 +32,30 @@ var getImages = (function() {
     filePathRegex = new RegExp('["\']?([\\w\\d\\s!:./\\-\\_@]*\\.[\\w?#]+)["\']?', 'ig');
 
     return function(file, content, options) {
-        var reference, images, chain,
-            retina;
+        var reference, images,
+            retina, filePath,
+            url, image, meta, basename,
+            makeRegexp;
 
         images = [];
 
-        while ((reference = imageRegex.exec(content)) != null) {
-            var filePath, url, image, meta, basename;
+        basename = path.basename(file.path);
 
-            basename = path.basename(file.path);
+        makeRegexp = (function() {
+            var matchOperatorsRe = /[|\\/{}()[\]^$+*?.]/g;
+
+            return function(str) {
+                return str.replace(matchOperatorsRe,  '\\$&');
+            }
+        })();
+
+        while ((reference = imageRegex.exec(content)) != null) {
+            url   = reference[1];
+            meta  = reference[2];
 
             image = {
-                replacement: reference[0],
-                url:         (url = reference[1]),
+                replacement: new RegExp('background-image:\\s+url\\(\\s?(["\']?)\\s?' + makeRegexp(url) + '\\s?\\1\\s?\\)[^;]*\\;', 'gi'),
+                url:         url,
                 group:       [],
                 isRetina:    false,
                 retinaRatio: 1,
@@ -61,7 +72,7 @@ var getImages = (function() {
                 continue;
             }
 
-            if (meta = reference[2]) {
+            if (meta) {
                 try {
                     meta = JSON.parse(meta);
                     meta.sprite && (image.meta = meta.sprite);
@@ -97,52 +108,70 @@ var getImages = (function() {
         // reset lastIndex
         imageRegex.lastIndex = 0;
 
-        // remove nulls
-        images = Q(_.filter(images));
+        // remove nulls and duplicates
+        images = _.chain(images)
+            .filter()
+            .unique(function(image) {
+                return image.path;
+            })
+            .value();
 
-        return images
+        return Q(images)
             // apply user filters
             .then(function(images) {
-                var chain;
+                return Q.Promise(function(resolve, reject) {
+                    async.reduce(
+                        options.filter,
+                        images,
+                        function(images, filter, next) {
+                            async.filter(
+                                images,
+                                function(image, ok) {
+                                    Q(filter(image)).then(ok);
+                                },
+                                function(images) {
+                                    next(null, images);
+                                }
+                            );
+                        },
+                        function(err, images) {
+                            if (err) {
+                                return reject(err);
+                            }
 
-                chain = Q(images);
-
-                options.filter.forEach(function(filter) {
-                    chain = chain.then(function(images) {
-                        var deferred = Q.defer();
-
-                        async.filter(images, function(image, ok) {
-                            Q(filter(image)).then(ok);
-                        }, deferred.resolve);
-
-                        return deferred.promise;
-                    });
+                            resolve(images);
+                        }
+                    );
                 });
-
-                return chain;
             })
             // apply user group processors
             .then(function(images) {
-                var chain;
-
-                chain = Q(images);
-
-                options.groupBy.forEach(function(groupBy) {
-                    chain = chain
-                        .then(function(images) {
-                            return Q.nfcall(async.map, images, function(image, done) {
+                return Q.Promise(function(resolve, reject) {
+                    async.reduce(
+                        options.groupBy,
+                        images,
+                        function(images, groupBy, next) {
+                            async.map(images, function(image, done) {
                                 Q(groupBy(image))
                                     .then(function(group) {
-                                        return group && image.group.push(group);
-                                    })
-                                    .then(function() {
-                                        done(null, image);
-                                    });
-                            });
-                        });
-                });
+                                        if (group) {
+                                            image.group.push(group);
+                                        }
 
-                return chain;
+                                        done(null, image);
+                                    })
+                                    .catch(done);
+                            }, next);
+                        },
+                        function(err, images) {
+                            if (err) {
+                                return reject(err);
+                            }
+
+                            resolve(images);
+                        }
+                    );
+                });
             });
     }
 })();

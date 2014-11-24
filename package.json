@@ -1,40 +1,43 @@
 {
-    "name": "gulp-sprite-generator",
-    "version": "0.2.1",
-    "description": "Plugin that generate sprites from your stylesheets (using spritesmith) and then updates the references.",
-    "main": "index.js",
-    "test": "mocha test",
-    "keywords": [
-        "gulpplugin",
-        "gulpfriendly",
-        "spritesheet",
-        "sprite",
-        "generator",
-        "png",
-        "stylesheet",
-        "spritesmith",
-        "css"
-    ],
-    "author": {
-        "name": "Sergey Kamardin",
-        "email": "gobwas@gmail.com",
-        "url": "http://github.com/gobwas"
-    },
-    "license": "MIT",
-    "repository": "https://github.com/gobwas/gulp-sprite-generator",
-    "devDependencies": {
-        "mocha": "*",
-        "chai": "*",
-        "gulp": "*"
-    },
-    "dependencies": {
-        "spritesmith": "^0.18.0",
-        "vinyl": "^0.2.3",
-        "colors": "^0.6.2",
-        "lodash": "^2.4.1",
-        "gulp-util": "^2.2.14",
-        "q": "^1.0.1",
-        "async": "^0.2.10",
-        "through2": "^0.4.1"
-    }
+  "name": "gulp-sprite-generator",
+  "version": "0.2.2",
+  "description": "Plugin that generate sprites from your stylesheets (using spritesmith) and then updates the references.",
+  "main": "index.js",
+  "test": "mocha test",
+  "keywords": [
+    "gulpplugin",
+    "spritesheet",
+    "sprite",
+    "generator",
+    "png",
+    "stylesheet",
+    "spritesmith",
+    "css"
+  ],
+  "author": {
+    "name": "Sergey Kamardin",
+    "email": "gobwas@gmail.com",
+    "url": "http://github.com/gobwas"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/gobwas/gulp-sprite-generator",
+  "devDependencies": {
+    "mocha": "*",
+    "chai": "*",
+    "gulp": "*"
+  },
+  "scripts": {
+    "test": "mocha ./test"
+  },
+  "dependencies": {
+    "async": "^0.2.10",
+    "colors": "^0.6.2",
+    "escape-string-regexp": "^1.0.2",
+    "gulp-util": "^2.2.14",
+    "lodash": "^2.4.1",
+    "q": "^1.0.1",
+    "spritesmith": "^0.18.0",
+    "through2": "^0.4.1",
+    "vinyl": "^0.2.3"
+  }
 }
