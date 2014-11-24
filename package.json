@@ -32,7 +32,6 @@
   "dependencies": {
     "async": "^0.2.10",
     "colors": "^0.6.2",
-    "escape-string-regexp": "^1.0.2",
     "gulp-util": "^2.2.14",
     "lodash": "^2.4.1",
     "q": "^1.0.1",
