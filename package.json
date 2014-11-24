@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "gulp-sprite-generator",
   "version": "0.2.2",
   "description": "Plugin that generate sprites from your stylesheets (using spritesmith) and then updates the references.",
