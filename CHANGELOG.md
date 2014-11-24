@@ -1,5 +1,12 @@
 # THE CHANGELOG
 
+### 0.2.2 (25.11.2014)
+______________________
+
++ Duplicating images bugfix [issue#6](https://github.com/gobwas/gulp-sprite-generator/issues/6);
++ Travis CI integration;
++ Minimal refactoring.
+
 ### 0.2.0 (18.05.2014)
 ______________________
 
