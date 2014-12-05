@@ -22,6 +22,75 @@ describe('gulp-sprite-generator', function(){
         expectations   = path.resolve(test, 'expectations');
     });
 
+    it("should accumulate images and create common sprite from multiple stylesheets", function(done) {
+        var config, stream, errors, stylesheet, index;
+
+        index = ['A.css', 'B.css'];
+
+        stylesheet = {
+            fixtures: [path.resolve(fixtures, 'A.css'), path.resolve(fixtures, 'B.css')],
+            expectations: [path.resolve(expectations, 'A.css'), path.resolve(expectations, 'B.css')],
+        };
+
+        errors = [];
+
+        config = {
+            src:        [],
+            engine:     "auto",
+            algorithm:  "top-down",
+            padding:    0,
+            engineOpts: {},
+            exportOpts: {},
+
+            baseUrl:         fixtures,
+            spriteSheetName:  "sprite.png",
+            spriteSheetPath: null,
+            filter: [],
+            groupBy: [],
+            accumulate: true
+        };
+
+        stream = sprite(config);
+
+        stream.img.on('data', function (file) {
+            try {
+                assert.equal(file.path, config.spriteSheetName);
+            } catch (err) {
+                errors.push(err);
+            }
+        });
+
+        stream.css.on('data', function (file) {
+            var id;
+
+            id = index.indexOf(file.path);
+
+            try {
+                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectations[id]).toString()));
+            } catch (err) {
+                errors.push(err);
+            }
+        });
+
+        stream.write(new File({
+            base:     test,
+            path:     stylesheet.fixtures[0],
+            contents: new Buffer(fs.readFileSync(stylesheet.fixtures[0]))
+        }));
+
+        stream.write(new File({
+            base:     test,
+            path:     stylesheet.fixtures[1],
+            contents: new Buffer(fs.readFileSync(stylesheet.fixtures[1]))
+        }));
+
+        stream.on('finish', function() {
+            done(errors[0]);
+        });
+
+        stream.end();
+    });
+
     it("Should create sprite and change refs in stylesheet", function(done) {
         var config, stream, errors, stylesheet;
 

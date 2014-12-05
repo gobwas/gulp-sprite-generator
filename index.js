@@ -5,12 +5,14 @@ var path        = require('path'),
     colors      = require('colors'),
     fs          = require('fs'),
     gutil       = require('gulp-util'),
+    util        = require("util"),
     async       = require('async'),
     Q           = require('q'),
     through     = require('through2'),
     Readable    = require('stream').Readable,
 
-    PLUGIN_NAME = "gulp-sprite-generator";
+    PLUGIN_NAME = "gulp-sprite-generator",
+    debug;
 
 var log = function() {
     var args, sig;
@@ -31,11 +33,13 @@ var getImages = (function() {
     pngRegex      = new RegExp('\\.png$', 'ig');
     filePathRegex = new RegExp('["\']?([\\w\\d\\s!:./\\-\\_@]*\\.[\\w?#]+)["\']?', 'ig');
 
-    return function(file, content, options) {
+    return function(file, options) {
         var reference, images,
             retina, filePath,
             url, image, meta, basename,
-            makeRegexp;
+            makeRegexp, content;
+
+        content = file.contents.toString();
 
         images = [];
 
@@ -63,12 +67,12 @@ var getImages = (function() {
             };
 
             if (httpRegex.test(url)) {
-                log(colors.cyan(basename) + ' > ' + url + ' has been skipped as it\'s an external resource!');
+                options.verbose && log(colors.cyan(basename) + ' > ' + url + ' has been skipped as it\'s an external resource!');
                 continue;
             }
 
             if (!pngRegex.test(url)) {
-                log(colors.cyan(basename) + ' > ' + url + ' has been skipped as it\'s not a PNG!');
+                options.verbose && log(colors.cyan(basename) + ' > ' + url + ' has been skipped as it\'s not a PNG!');
                 continue;
             }
 
@@ -232,7 +236,11 @@ var callSpriteSmithWith = (function() {
             .value();
 
 
-        return Q.all(all);
+        return Q.all(all).then(function(results) {
+            debug.images+= images.length;
+            debug.sprites+= results.length;
+            return results;
+        });
     }
 })();
 
@@ -245,7 +253,9 @@ var updateReferencesIn = (function() {
         'background-size: <%= isRetina ? (properties.width / retinaRatio) : properties.width %>px <%= isRetina ? (properties.height / retinaRatio) : properties.height %>px!important;'
     );
 
-    return function(content) {
+    return function(file) {
+        var content = file.contents.toString();
+
         return function(results) {
             results.forEach(function(images) {
                 images.forEach(function(image) {
@@ -253,7 +263,7 @@ var updateReferencesIn = (function() {
                 });
             });
 
-            return content;
+            return Q(content);
         }
     }
 })();
@@ -288,14 +298,11 @@ var exportSprites = (function() {
 
                 stream.push(sprite);
 
-                log('Spritesheet', result.path, 'has been created');
+                options.verbose && log('Spritesheet', result.path, 'has been created');
 
 
                 return result;
-            });
-
-            // end stream
-            stream.push(null);
+            });            
 
             return results;
         }
@@ -313,10 +320,7 @@ var exportStylesheet = function(stream, options) {
 
         stream.push(stylesheet);
 
-        // end stream
-        stream.push(null);
-
-        log('Stylesheet', options.styleSheetName, 'has been created');
+        options.verbose && log('Stylesheet', options.styleSheetName, 'has been created');
     }
 };
 
@@ -337,6 +341,11 @@ var mapSpritesProperties = function(images, options) {
 module.exports = function(options) { 'use strict';
     var stream, styleSheetStream, spriteSheetStream;
 
+    debug = {
+        sprites: 0,
+        images:  0
+    };
+
     options = _.merge({
         src:        [],
         engine:     "pngsmith", //auto
@@ -356,7 +365,9 @@ module.exports = function(options) { 'use strict';
         spriteSheetName: null,
         spriteSheetPath: null,
         filter:          [],
-        groupBy:         []
+        groupBy:         [],
+        accumulate:      false,
+        verbose:         false
     }, options || {});
 
     // check necessary properties
@@ -378,7 +389,7 @@ module.exports = function(options) { 'use strict';
 
     // add meta skip filter
     options.filter.unshift(function(image) {
-        image.meta.skip && log(image.path + ' has been skipped as it meta declares to skip');
+        image.meta.skip && options.verbose && log(image.path + ' has been skipped as it meta declares to skip');
         return !image.meta.skip;
     });
 
@@ -387,7 +398,7 @@ module.exports = function(options) { 'use strict';
         var deferred = Q.defer();
 
         fs.exists(image.path, function(exists) {
-            !exists && log(image.path + ' has been skipped as it does not exist!');
+            !exists && options.verbose && log(image.path + ' has been skipped as it does not exist!');
             deferred.resolve(exists);
         });
 
@@ -411,51 +422,105 @@ module.exports = function(options) { 'use strict';
     spriteSheetStream = new Readable({objectMode: true});
     spriteSheetStream._read = styleSheetStream._read = noop;
 
-    stream = through.obj(function(file, enc, done) {
-        var content;
+    var accumulatedFiles = [];
 
-        if (file.isNull()) {
-            this.push(file); // Do nothing if no contents
-            return done();
-        }
-
-        if (file.isStream()) {
-            this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'Streams is not supported!'));
-            return done();
-        }
-
-        if (file.isBuffer()) {
-            content = file.contents.toString();
-
-            if (!options.styleSheetName) {
-                options.styleSheetName = path.basename(file.path);
+    stream = through.obj(
+        function(file, enc, done) {
+            if (file.isNull()) {
+                this.push(file); // Do nothing if no contents
+                return done();
             }
 
-            getImages(file, content, options)
-                .then(function(images) {
-                    callSpriteSmithWith(images, options)
-                        .then(exportSprites(spriteSheetStream, options))
-                        .then(mapSpritesProperties(images, options))
-                        .then(updateReferencesIn(content))
-                        .then(exportStylesheet(styleSheetStream, options))
-                        .then(function() {
-                            // pipe source file
-                            stream.push(file);
-                            done();
-                        })
-                        .catch(function(err) {
-                            stream.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
-                            done();
-                        });
-                });
+            if (file.isStream()) {
+                this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'Streams is not supported!'));
+                return done();
+            }
+
+            if (file.isBuffer()) {
+                // postpone evaluation, if we accumulating
+                if (options.accumulate) {
+                    accumulatedFiles.push(file);
+                    stream.push(file);
+                    done();
+                    return;
+                }
+
+                getImages(file, options)
+                    .then(function(images) {
+                        callSpriteSmithWith(images, options)
+                            .then(exportSprites(spriteSheetStream, options))
+                            .then(mapSpritesProperties(images, options))
+                            .then(updateReferencesIn(file))
+                            .then(exportStylesheet(styleSheetStream, _.extend({}, options, { styleSheetName: options.styleSheetName || path.basename(file.path) })))
+                            .then(function() {
+                                // pipe source file
+                                stream.push(file);
+                                done();
+                            })
+                            .catch(function(err) {
+                                stream.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
+                                done();
+                            });
+                    });
 
 
-            return null;
-        } else {
-            this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'Something went wrong!'));
-            return done();
+                return null;
+            } else {
+                this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'Something went wrong!'));
+                return done();
+            }
+        },
+        // flush
+        function(done) {
+            var pending;
+
+            if (options.accumulate) {
+                pending = Q
+                    .all(accumulatedFiles.map(function(file) {
+                        return getImages(file, options);
+                    }))
+                    .then(function(list) {
+                        var images;
+
+                        return _.chain(list)
+                            .reduce(function(images, portion) {
+                                return images.concat(portion);
+                            }, [])
+                            .unique(function(image) {
+                                return image.path;
+                            })
+                            .value();
+                    })
+                    .then(function(images) {
+                        return callSpriteSmithWith(images, options)
+                            .then(exportSprites(spriteSheetStream, options))
+                            .then(mapSpritesProperties(images, options))
+                            .then(function(results) {
+                                return Q.all(accumulatedFiles.map(function(file) {
+                                    return updateReferencesIn(file)(results)
+                                        .then(exportStylesheet(styleSheetStream, _.extend({}, options, { styleSheetName: path.basename(file.path) })));
+                                }));
+                            });
+                    })
+                    .catch(function(err) {
+                        stream.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
+                        done();
+                    });
+            } else {
+                pending = Q();
+            }
+
+            pending.then(function() {
+                // end streams
+                styleSheetStream.push(null);
+                spriteSheetStream.push(null);
+
+                log(util.format("Created %d sprite(s) from %d images, saved %s% requests", debug.sprites, debug.images, debug.images > 0 ? ((debug.sprites / debug.images) * 100).toFixed(1) : 0));
+
+                done();
+            });
         }
-    });
+    );
 
     stream.css = styleSheetStream;
     stream.img = spriteSheetStream;

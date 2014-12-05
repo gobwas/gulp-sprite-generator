@@ -72,6 +72,8 @@ spriteSheetName   | **yes**   | `String`     | `null`
 [retina]          | no        | `Boolean`    | `true`
 [filter]          | no        | `Function[]` | `[]`
 [groupBy]         | no        | `Function[]` | `[]`
+[accumulate]      | no        | `Boolean`    | `false`
+[verbose]         | no        | `Boolean`    | `false`
 
 More detailed explanation is below.
 
@@ -123,6 +125,16 @@ Defines logic of how to group images found in the input stylesheet. Each grouper
 [thenable `Promise`](https://github.com/promises-aplus/promises-spec), that will be resolved with `String|Null`. Each grouper
 applies in series.
 
+#### options.accumulate
+Type: `Boolean`
+Default value: `false`
+
+Tells sprite-generator to accumulate images from multiple stylesheets. This mean, that images, found in stylesheet `A.css` and `B.css` will be accumulated and grouped in common sprite.
+> Note, that if `options.accumulate == true` then `options.styleSheetName` will not be used.
+
+#### options.verbose
+Type: `Boolean`
+Default value: `false`
 
 ### Filtering and grouping
 

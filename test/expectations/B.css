@@ -1,0 +1,5 @@
+.b {
+    background-image: url("sprite.png");
+    background-position: -0px -25px;
+    background-size: 25px 50px!important;
+}
