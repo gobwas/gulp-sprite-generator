@@ -1,5 +1,11 @@
 # THE CHANGELOG
 
+### 0.2.3 (05.12.2014)
+______________________
+
++ Added option for accumulate images from multiple stylesheets;
++ Removed annoying logs (`verbose` option)
+
 ### 0.2.2 (25.11.2014)
 ______________________
 
