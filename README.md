@@ -35,7 +35,7 @@ gulp.task('sprites', function() {
             baseUrl:         "./src/image",
             spriteSheetName: "sprite.png",
             spriteSheetPath: "/dist/image"
-		});
+		}));
 
     spriteOutput.css.pipe(gulp.dest("./dist/css"));
     spriteOutput.img.pipe(gulp.dest("./dist/image"));
