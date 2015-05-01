@@ -42,7 +42,7 @@ gulp.task('sprites', function() {
 });
 ```
 
-Of course you may need to have more flexible configuration for spriting. And this plugin could give you something more!
+Of course you may need to have more flexible configuration for spriting. And this plugin can give you something more!
 
 ## Options
 
