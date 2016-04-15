@@ -7,14 +7,20 @@
 
 Plugin that generate sprites from your stylesheets (using [spritesmith](https://github.com/Ensighten/spritesmith)) and then updates image references.
 
-## Getting started
+## Getting Started
 
 If you haven't used [gulp](http://gulpjs.com) before, be sure to check out the [Getting Started](https://github.com/gulpjs/gulp/blob/master/docs/getting-started.md) guide.
 
-Install with [npm](https://npmjs.org/package/gulp-sprite-generator)
+Install with [npm](https://npmjs.org/package/gulp-sprite-generator):
 
+```sh
+$ npm install --save-dev gulp-sprite-generator
 ```
-npm install --save-dev gulp-sprite-generator
+
+You also should install a spritesmith engine:
+
+```sh
+$ npm install --save-dev pixelsmith
 ```
 
 ## Overview
@@ -113,7 +119,7 @@ For example: `image@2x.png`.
 Type: `Function[]`, `Function`
 Default value: `[]`
 
-Defines which filters apply to images found in the input stylesheet. Each filer called with image object, explained below. Each filter must return `Boolean` or
+Defines which filters apply to images found in the input stylesheet. Each filter is called with the image object, explained below. Each filter must return `Boolean` or
 [thenable `Promise`](https://github.com/promises-aplus/promises-spec), that will be resolved with `Boolean`. Each filter
 applies in series.
 
@@ -173,9 +179,8 @@ You can also define some properties for the filters and groupers in doc block vi
 Example:
 
 ```css
-
 .my_class {
-    background-image: url("/images/my.png"); /* @meta {"sprite": {"skip": true}} */
+	background-image: url("/images/my.png"); /* @meta {"sprite": {"skip": true}} */
 }
 
 ```
@@ -186,52 +191,48 @@ Example:
 ### Flexible example
 
 ```javascript
-
-var gulp   = require('gulp'),
-    sprite = require('gulp-sprite-generator'),
-    Q      = require('q'),
-    sizeOf = require('image-size');
+var gulp = require('gulp');
+var sprite = require('gulp-sprite-generator');
+var Promise = require('es6-promise').Promise;
+var sizeOf = require('image-size');
 
 gulp.task('sprites', function() {
-    var spriteOutput;
-
-	spriteOutput = gulp.src("./src/css/*.css")
+	var spriteOutput = gulp.src('./src/css/*.css')
 		.pipe(sprite({
-            baseUrl:         "./",
-            spriteSheetName: "sprite.png",
-            spriteSheetPath: "/dist/image",
-            styleSheetName:  "stylesheet.css",
+			baseUrl: './',
+			engine: 'pixelsmith',
+			spriteSheetName: 'sprite.png',
+			spriteSheetPath: '/dist/image',
+			styleSheetName: 'stylesheet.css',
 
-            filter: [
-                // this is a copy of built in filter of meta skip
-                // do not forget to set it up in your stylesheets using doc block /* */
-                function(image) {
-                    return !image.meta.skip;
-                }
-            ],
+			filter: [
+				// this is a copy of built in filter of meta skip
+				// do not forget to set it up in your stylesheets using doc block /* */
+				function(image) {
+					return !image.meta.skip;
+				}
+			],
 
-            groupBy: [
-                // group images by width
-                // useful when building background repeatable sprites
-                function(image) {
-                    var deferred = Q.defer();
-
-                    sizeOf(image.path, function(err, size) {
-                        deferred.resolve(size.width.toString());
-                    });
-
-                    return deferred.promise;
-                }
-            ]
+			groupBy: [
+				// group images by width
+				// useful when building background repeatable sprites
+				function(image) {
+					return new Promise(function(resolve, reject) {
+						sizeOf(image.path, function(err, size) {
+							if (err) return reject(err);
+							resolve(size.width.toString());
+						});
+					});
+				}
+			]
 		});
 
-    spriteOutput.css.pipe(gulp.dest("./dist/css"));
-    spriteOutput.img.pipe(gulp.dest("./dist/image"));
-});
+	spriteOutput.css.pipe(gulp.dest('./dist/css'));
+	spriteOutput.img.pipe(gulp.dest('./dist/image'));
 
+});
 ```
 
 ## License
 
 MIT © [Sergey Kamardin](http://github.com/gobwas)
-

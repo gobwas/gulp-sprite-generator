@@ -1,28 +1,35 @@
-var fs      = require('fs'),
-    assert  = require('chai').assert,
-    File    = require('vinyl'),
-    path    = require('path'),
-    through = require('through2'),
-//    gulpif  = require("gulp-if"),
-//    rev     = require("gulp-rev"),
-    sprite  = require('./../index');
+var fs           = require('fs');
+var assert       = require('chai').assert;
+var File         = require('vinyl');
+var path         = require('path');
+var through      = require('through2');
+var sprite       = require('./../index');
+var test         = path.resolve(__dirname, '.');
+var fixtures     = path.resolve(test, 'fixtures');
+var expectations = path.resolve(test, 'expectations');
+var output       = path.resolve(test, 'output');
 
+var WRITE_EXPECTATIONS = false;
 
-function clearStr(str) {
-    return str.replace(/[\s,\r,\n,\t]/gi, "");
+function cleanCSS(str) {
+    return str.replace(/( {2,}|\t)/gi, '');
 }
 
-describe('gulp-sprite-generator', function(){
+function assertCSS(a, expectedFile) {
+    if (WRITE_EXPECTATIONS) fs.writeFileSync(expectedFile, a, 'utf8');
+    var b = fs.readFileSync(expectedFile, 'utf8');
+    assert.deepEqual(cleanCSS(a), cleanCSS(b));
+}
 
-    var test, fixtures, expectations;
+var visualSpriteID = 0;
+function saveSpriteForVisualInspection(file) {
+    var outputFile = output + '/sprite' + (++visualSpriteID) + '.png';
+    fs.writeFileSync(outputFile, file.contents);
+}
 
-    before(function() {
-        test       = path.resolve(__dirname, '.');
-        fixtures   = path.resolve(test, 'fixtures');
-        expectations   = path.resolve(test, 'expectations');
-    });
+describe('gulp-sprite-generator', function() {
 
-    it("should accumulate images and create common sprite from multiple stylesheets", function(done) {
+    it('should accumulate images and create common sprite from multiple stylesheets', function(done) {
         var config, stream, errors, stylesheet, index;
 
         index = ['A.css', 'B.css'];
@@ -35,15 +42,15 @@ describe('gulp-sprite-generator', function(){
         errors = [];
 
         config = {
-            src:        [],
-            engine:     "auto",
-            algorithm:  "top-down",
-            padding:    0,
+            src: [],
+            engine: null,
+            algorithm: 'top-down',
+            padding: 0,
             engineOpts: {},
             exportOpts: {},
 
-            baseUrl:         fixtures,
-            spriteSheetName:  "sprite.png",
+            baseUrl: fixtures,
+            spriteSheetName: 'sprite.png',
             spriteSheetPath: null,
             filter: [],
             groupBy: [],
@@ -54,6 +61,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.img.on('data', function (file) {
             try {
+                saveSpriteForVisualInspection(file);
                 assert.equal(file.path, config.spriteSheetName);
             } catch (err) {
                 errors.push(err);
@@ -66,21 +74,21 @@ describe('gulp-sprite-generator', function(){
             id = index.indexOf(file.path);
 
             try {
-                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectations[id]).toString()));
+                assertCSS(file.contents.toString(), stylesheet.expectations[id]);
             } catch (err) {
                 errors.push(err);
             }
         });
 
         stream.write(new File({
-            base:     test,
-            path:     stylesheet.fixtures[0],
+            base: test,
+            path: stylesheet.fixtures[0],
             contents: new Buffer(fs.readFileSync(stylesheet.fixtures[0]))
         }));
 
         stream.write(new File({
-            base:     test,
-            path:     stylesheet.fixtures[1],
+            base: test,
+            path: stylesheet.fixtures[1],
             contents: new Buffer(fs.readFileSync(stylesheet.fixtures[1]))
         }));
 
@@ -91,7 +99,7 @@ describe('gulp-sprite-generator', function(){
         stream.end();
     });
 
-    it("Should create sprite and change refs in stylesheet", function(done) {
+    it('Should create sprite and change refs in stylesheet', function(done) {
         var config, stream, errors, stylesheet;
 
         stylesheet = {
@@ -102,16 +110,16 @@ describe('gulp-sprite-generator', function(){
         errors = [];
 
         config = {
-            src:        [],
-            engine:     "auto",
-            algorithm:  "top-down",
+            src: [],
+            engine:     null,
+            algorithm:    'top-down',
             padding:    0,
             engineOpts: {},
             exportOpts: {},
 
-            baseUrl:         fixtures,
-            spriteSheetName:  "sprite.png",
-            styleSheetName: "stylesheet.sprite.css",
+            baseUrl: fixtures,
+            spriteSheetName:    'sprite.png',
+            styleSheetName: 'stylesheet.sprite.css',
             spriteSheetPath: null,
             filter: [],
             groupBy: []
@@ -121,6 +129,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.img.on('data', function (file) {
             try {
+                saveSpriteForVisualInspection(file);
                 assert.equal(file.path, config.spriteSheetName);
             } catch (err) {
                 errors.push(err);
@@ -129,7 +138,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.css.on('data', function (file) {
             try {
-                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
+                assertCSS(file.contents.toString(), stylesheet.expectation);
                 assert.equal(file.path, config.styleSheetName);
             } catch (err) {
                 errors.push(err);
@@ -137,8 +146,8 @@ describe('gulp-sprite-generator', function(){
         });
 
         stream.write(new File({
-            base:     test,
-            path:     stylesheet.fixture,
+            base: test,
+            path: stylesheet.fixture,
             contents: new Buffer(fs.readFileSync(stylesheet.fixture))
         }));
 
@@ -149,9 +158,8 @@ describe('gulp-sprite-generator', function(){
         stream.end();
     });
 
-    it("Should create sprite for retina and change refs in stylesheet", function(done) {
-        var config, stream, errors,
-            stylesheet;
+    it('Should create sprite for retina and change refs in stylesheet', function(done) {
+        var config, stream, errors, stylesheet;
 
         stylesheet = {
             fixture: path.resolve(fixtures, 'stylesheet.retina.css'),
@@ -159,27 +167,27 @@ describe('gulp-sprite-generator', function(){
         };
 
         errors = [];
-
         config = {
-            src:        [],
-            engine:     "auto",
-            algorithm:  "top-down",
-            padding:    0,
+            src: [],
+            engine: null,
+            algorithm: 'top-down',
+            padding: 0,
             engineOpts: {},
             exportOpts: {},
 
-            baseUrl:         fixtures,
-            spriteSheetName: "sprite.png",
-            styleSheetName:  "stylesheet.sprite.css",
+            baseUrl: fixtures,
+            spriteSheetName: 'sprite.png',
+            styleSheetName:    'stylesheet.sprite.css',
             spriteSheetPath: null,
-            filter:          [],
-            groupBy:         []
+            filter: [],
+            groupBy: []
         };
 
         stream = sprite(config);
 
         stream.img.on('data', function (file) {
             try {
+                saveSpriteForVisualInspection(file);
                 assert.equal(file.path, 'sprite.@2x.png');
             } catch (err) {
                 errors.push(err);
@@ -188,7 +196,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.css.on('data', function (file) {
             try {
-                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
+                assertCSS(file.contents.toString(), stylesheet.expectation);
                 assert.equal(file.path, config.styleSheetName);
             } catch (err) {
                 errors.push(err);
@@ -196,8 +204,8 @@ describe('gulp-sprite-generator', function(){
         });
 
         stream.write(new File({
-            base:     test,
-            path:     stylesheet.fixture,
+            base: test,
+            path: stylesheet.fixture,
             contents: new Buffer(fs.readFileSync(stylesheet.fixture))
         }));
 
@@ -208,9 +216,8 @@ describe('gulp-sprite-generator', function(){
         stream.end();
     });
 
-    it("Should create sprite using groupBy and change refs in stylesheet", function(done) {
-        var config, stream, errors,
-            stylesheet;
+    it('Should create sprite using groupBy and change refs in stylesheet', function(done) {
+        var config, stream, errors, stylesheet;
 
         stylesheet = {
             fixture: path.resolve(fixtures, 'stylesheet.css'),
@@ -220,29 +227,30 @@ describe('gulp-sprite-generator', function(){
         errors = [];
 
         config = {
-            src:        [],
-            engine:     "auto",
-            algorithm:  "top-down",
-            padding:    0,
+            src: [],
+            engine: null,
+            algorithm: 'top-down',
+            padding: 0,
             engineOpts: {},
             exportOpts: {},
 
-            baseUrl:         fixtures,
-            spriteSheetName: "sprite.png",
-            styleSheetName:  "stylesheet.sprite.css",
+            baseUrl: fixtures,
+            spriteSheetName: 'sprite.png',
+            styleSheetName:    'stylesheet.sprite.css',
             spriteSheetPath: null,
-            filter:          [],
-            groupBy:         []
+            filter: [],
+            groupBy: []
         };
 
         config.groupBy.push(function(image) {
-            return "my";
+            return 'my';
         });
 
         stream = sprite(config);
 
         stream.img.on('data', function (file) {
             try {
+                saveSpriteForVisualInspection(file);
                 assert.equal(file.path, 'sprite.my.png');
             } catch (err) {
                 errors.push(err);
@@ -251,7 +259,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.css.on('data', function (file) {
             try {
-                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
+                assertCSS(file.contents.toString(), stylesheet.expectation);
                 assert.equal(file.path, config.styleSheetName);
             } catch (err) {
                 errors.push(err);
@@ -259,8 +267,8 @@ describe('gulp-sprite-generator', function(){
         });
 
         stream.write(new File({
-            base:     test,
-            path:     stylesheet.fixture,
+            base: test,
+            path: stylesheet.fixture,
             contents: new Buffer(fs.readFileSync(stylesheet.fixture))
         }));
 
@@ -271,9 +279,8 @@ describe('gulp-sprite-generator', function(){
         stream.end();
     });
 
-    it("Should create sprite using filter and change refs in stylesheet", function(done) {
-        var config, stream, errors,
-            stylesheet;
+    it('Should create sprite using filter and change refs in stylesheet', function(done) {
+        var config, stream, errors, stylesheet;
 
         stylesheet = {
             fixture: path.resolve(fixtures, 'stylesheet.css'),
@@ -283,29 +290,29 @@ describe('gulp-sprite-generator', function(){
         errors = [];
 
         config = {
-            src:        [],
-            engine:     "auto",
-            algorithm:  "top-down",
+            src: [],
+            engine: null,
+            algorithm: 'top-down',
             padding:    0,
             engineOpts: {},
             exportOpts: {},
-
-            baseUrl:         fixtures,
-            spriteSheetName: "sprite.png",
-            styleSheetName:  "stylesheet.sprite.css",
+            baseUrl: fixtures,
+            spriteSheetName: 'sprite.png',
+            styleSheetName:    'stylesheet.sprite.css',
             spriteSheetPath: null,
-            filter:          [],
-            groupBy:         []
+            filter: [],
+            groupBy: []
         };
 
         config.filter.push(function(image) {
-            return image.url != "/a.png";
+            return image.url != '/a.png';
         });
 
         stream = sprite(config);
 
         stream.img.on('data', function (file) {
             try {
+                saveSpriteForVisualInspection(file);
                 assert.equal(file.path, 'sprite.png');
             } catch (err) {
                 errors.push(err);
@@ -314,7 +321,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.css.on('data', function (file) {
             try {
-                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
+                assertCSS(file.contents.toString(), stylesheet.expectation);
                 assert.equal(file.path, config.styleSheetName);
             } catch (err) {
                 errors.push(err);
@@ -322,8 +329,8 @@ describe('gulp-sprite-generator', function(){
         });
 
         stream.write(new File({
-            base:     test,
-            path:     stylesheet.fixture,
+            base: test,
+            path: stylesheet.fixture,
             contents: new Buffer(fs.readFileSync(stylesheet.fixture))
         }));
 
@@ -334,23 +341,22 @@ describe('gulp-sprite-generator', function(){
         stream.end();
     });
 
-    it("Should create sprite reading meta in doc block and change refs in stylesheet", function(done) {
-        var config, stream, errors,
-            meta;
+    it('Should create sprite reading meta in doc block and change refs in stylesheet', function(done) {
+        var config, stream, errors, meta;
 
         errors = [];
 
         config = {
-            baseUrl:         fixtures,
-            spriteSheetName: "sprite.png",
-            filter:          []
+            baseUrl: fixtures,
+            spriteSheetName: 'sprite.png',
+            filter: []
         };
 
         meta = {
             sprite: {
                 some: true,
                 prop: 1,
-                yes: "no"
+                yes: 'no'
             }
         };
 
@@ -365,8 +371,8 @@ describe('gulp-sprite-generator', function(){
         stream = sprite(config);
 
         stream.write(new File({
-            base:     test,
-            path:     path.resolve(fixtures, 'stylesheetdddd.css'),
+            base: test,
+            path: path.resolve(fixtures, 'stylesheetdddd.css'),
             contents: new Buffer('.a { background-image: url("sprite.retina-2x.png"); /* @meta ' + JSON.stringify(meta) + ' */ }')
         }));
 
@@ -377,9 +383,8 @@ describe('gulp-sprite-generator', function(){
         stream.end();
     });
 
-    it("Should pipe properly", function(done) {
-        var config, stream, errors, stylesheet,
-            piped;
+    it('Should pipe properly', function(done) {
+        var config, stream, errors, stylesheet, piped;
 
         piped = {
             img: 0,
@@ -395,9 +400,9 @@ describe('gulp-sprite-generator', function(){
         errors = [];
 
         config = {
-            baseUrl:         fixtures,
-            spriteSheetName:  "sprite.png",
-            styleSheetName: "stylesheet.sprite.css",
+            baseUrl: fixtures,
+            spriteSheetName: 'sprite.png',
+            styleSheetName: 'stylesheet.sprite.css',
             spriteSheetPath: null,
             filter: [],
             groupBy: []
@@ -407,6 +412,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.img.on('data', function (file) {
             try {
+                saveSpriteForVisualInspection(file);
                 assert.equal(file.path, config.spriteSheetName);
             } catch (err) {
                 errors.push(err);
@@ -415,7 +421,7 @@ describe('gulp-sprite-generator', function(){
 
         stream.css.on('data', function (file) {
             try {
-                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
+                assertCSS(file.contents.toString(), stylesheet.expectation);
                 assert.equal(file.path, config.styleSheetName);
             } catch (err) {
                 errors.push(err);
@@ -423,8 +429,8 @@ describe('gulp-sprite-generator', function(){
         });
 
         stream.write(new File({
-            base:     test,
-            path:     stylesheet.fixture,
+            base: test,
+            path: stylesheet.fixture,
             contents: new Buffer(fs.readFileSync(stylesheet.fixture))
         }));
 
@@ -432,7 +438,7 @@ describe('gulp-sprite-generator', function(){
         stream.pipe(through.obj(function(file, enc, done) {
             piped.main++;
             try {
-                assert.instanceOf(file, File, "Piped in a main stream obj is not a File");
+                assert.instanceOf(file, File, 'Piped in a main stream obj is not a File');
             } catch (err) {
                 errors.push(err);
             }
@@ -441,7 +447,7 @@ describe('gulp-sprite-generator', function(){
         stream.css.pipe(through.obj(function(file, enc, done) {
             piped.css++;
             try {
-                assert.instanceOf(file, File, "Piped in a css stream obj is not a File");
+                assert.instanceOf(file, File, 'Piped in a css stream obj is not a File');
             } catch (err) {
                 errors.push(err);
             }
@@ -450,31 +456,22 @@ describe('gulp-sprite-generator', function(){
         stream.img.pipe(through.obj(function(file, enc, done) {
             piped.img++;
             try {
-                assert.instanceOf(file, File, "Piped in a img stream obj is not a File");
+                assert.instanceOf(file, File, 'Piped in a img stream obj is not a File');
             } catch (err) {
                 errors.push(err);
             }
         }));
 
-//        stream.img
-//            .pipe(rev())
-//            .pipe(through.obj(function(file, enc, done) {
-//                console.log('revision', file.path);
-//                this.push(file);
-//                done();
-//            }))
-//            .pipe(rev.manifest())
-//            .pipe(through.obj(function(file, enc, done) {
-//                console.log('manifest', file);
-//                this.push(file);
-//                done();
-//            }));
-
+        stream.on('error', function(e) {
+            console.error('Encountered stream error:');
+            console.error(e.stack);
+            errors.push(err);
+        });
         stream.on('finish', function() {
             try {
-                assert.equal(1, piped.img,  "No piped data in img stream");
-                assert.equal(1, piped.css,  "No piped data in css stream");
-                assert.equal(1, piped.main, "No piped data in main stream");
+                assert.equal(1, piped.img, 'No piped data in img stream');
+                assert.equal(1, piped.css, 'No piped data in css stream');
+                assert.equal(1, piped.main, 'No piped data in main stream');
             } catch (err) {
                 errors.push(err);
             }
@@ -484,6 +481,4 @@ describe('gulp-sprite-generator', function(){
 
         stream.end();
     });
-
 });
-

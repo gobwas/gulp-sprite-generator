@@ -1,37 +1,32 @@
-var path        = require('path'),
-    spritesmith = require('spritesmith'),
-    File        = require('vinyl'),
-    _           = require('lodash'),
-    colors      = require('colors'),
-    fs          = require('fs'),
-    gutil       = require('gulp-util'),
-    util        = require("util"),
-    async       = require('async'),
-    Q           = require('q'),
-    through     = require('through2'),
-    Readable    = require('stream').Readable,
+var _           = require('lodash');
+var fs          = require('fs');
+var path        = require('path');
+var util        = require("util");
+var gutil       = require('gulp-util');
+var async       = require('async');
+var File        = require('vinyl');
+var Spritesmith = require('spritesmith');
+var colors      = require('colors');
+var through2    = require('through2');
+var Promise     = require('es6-promise').Promise;
+var Readable    = require('stream').Readable;
 
-    PLUGIN_NAME = "gulp-sprite-generator",
-    debug;
+var PLUGIN_NAME = 'gulp-sprite-generator';
+var debug;
 
-var log = function() {
-    var args, sig;
-
-    args = Array.prototype.slice.call(arguments);
-    sig = '[' + colors.green(PLUGIN_NAME) + ']';
+function log() {
+    var args = Array.prototype.slice.call(arguments);
+    var sig = '[' + colors.green(PLUGIN_NAME) + ']';
     args.unshift(sig);
-
     gutil.log.apply(gutil, args);
-};
+}
 
 var getImages = (function() {
-    var httpRegex, imageRegex, filePathRegex, pngRegex, retinaRegex;
-
-    imageRegex    = new RegExp('background-image:[\\s]?url\\(["\']?([\\w\\d\\s!:./\\-\\_@]*\\.[\\w?#]+)["\']?\\)[^;]*\\;(?:\\s*\\/\\*\\s*@meta\\s*(\\{.*\\})\\s*\\*\\/)?', 'ig');
-    retinaRegex   = new RegExp('@(\\d)x\\.[a-z]{3,4}$', 'ig');
-    httpRegex     = new RegExp('http[s]?', 'ig');
-    pngRegex      = new RegExp('\\.png$', 'ig');
-    filePathRegex = new RegExp('["\']?([\\w\\d\\s!:./\\-\\_@]*\\.[\\w?#]+)["\']?', 'ig');
+    var imageRegex     = new RegExp('background-image\s*:[\\s]?url\\(["\']?([\\w\\d\\s!:./\\-\\_@]*\\.[\\w?#]+)["\']?\\)[^;]*\\;(?:\\s*\\/\\*\\s*@meta\\s*(\\{.*\\})\\s*\\*\\/)?', 'ig');
+    var retinaRegex    = new RegExp('@(\\d)x\\.[a-z]{3,4}$', 'ig');
+    var httpRegex      = new RegExp('https?', 'ig');
+    var imagePathRegex = new RegExp('\\.(png|jpe?g)$', 'ig');
+    var filePathRegex  = new RegExp('["\']?([\\w\\d\\s! :./\\-\\_@]*\\.[\\w?#]+)["\']?', 'ig');
 
     return function(file, options) {
         var reference, images,
@@ -39,40 +34,37 @@ var getImages = (function() {
             url, image, meta, basename,
             makeRegexp, content;
 
-        content = file.contents.toString();
-
         images = [];
-
+        content = file.contents.toString();
         basename = path.basename(file.path);
 
         makeRegexp = (function() {
             var matchOperatorsRe = /[|\\/{}()[\]^$+*?.]/g;
-
             return function(str) {
-                return str.replace(matchOperatorsRe,  '\\$&');
+                return str.replace(matchOperatorsRe,    '\\$&');
             }
         })();
 
         while ((reference = imageRegex.exec(content)) != null) {
-            url   = reference[1];
-            meta  = reference[2];
+            url     = reference[1];
+            meta    = reference[2];
 
             image = {
                 replacement: new RegExp('background-image:\\s+url\\(\\s?(["\']?)\\s?' + makeRegexp(url) + '\\s?\\1\\s?\\)[^;]*\\;', 'gi'),
-                url:         url,
-                group:       [],
+                url: url,
+                group: [],
                 isRetina:    false,
                 retinaRatio: 1,
-                meta:        {}
+                meta: {}
             };
 
             if (httpRegex.test(url)) {
-                options.verbose && log(colors.cyan(basename) + ' > ' + url + ' has been skipped as it\'s an external resource!');
+                options.verbose && log(colors.cyan(basename) + ' > ' + url + ' skipped as it\'s an external resource');
                 continue;
             }
 
-            if (!pngRegex.test(url)) {
-                options.verbose && log(colors.cyan(basename) + ' > ' + url + ' has been skipped as it\'s not a PNG!');
+            if (!imagePathRegex.test(url)) {
+                options.verbose && log(colors.cyan(basename) + ' > ' + url + ' skipped as it\'s not a png or jpeg');
                 continue;
             }
 
@@ -102,7 +94,7 @@ var getImages = (function() {
             image.path = filePath;
 
             // reset lastIndex
-            [httpRegex, pngRegex, retinaRegex, filePathRegex].forEach(function(regex) {
+            [httpRegex, imagePathRegex, retinaRegex, filePathRegex].forEach(function(regex) {
                 regex.lastIndex = 0;
             });
 
@@ -113,65 +105,45 @@ var getImages = (function() {
         imageRegex.lastIndex = 0;
 
         // remove nulls and duplicates
-        images = _.chain(images)
-            .filter()
-            .unique(function(image) {
-                return image.path;
-            })
-            .value();
+        images = _.uniq(_.filter(images), function(image) {
+            return image.path;
+        });
 
-        return Q(images)
+        return Promise.resolve(images)
             // apply user filters
             .then(function(images) {
-                return Q.Promise(function(resolve, reject) {
-                    async.reduce(
-                        options.filter,
-                        images,
-                        function(images, filter, next) {
-                            async.filter(
-                                images,
-                                function(image, ok) {
-                                    Q(filter(image)).then(ok);
-                                },
-                                function(images) {
-                                    next(null, images);
-                                }
-                            );
-                        },
-                        function(err, images) {
-                            if (err) {
-                                return reject(err);
-                            }
-
-                            resolve(images);
-                        }
-                    );
+                return new Promise(function(resolve, reject) {
+                    async.filter(images, function(image, callback) {
+                        async.reduce(options.filter, true, function(status, filter, callback) {
+                            if (!status) return callback(null, false);
+                            Promise.resolve(filter(image))
+                                .then(function(status) { callback(null, status); })
+                                .catch(callback);
+                        }, callback);
+                    }, function(err, filteredImages) {
+                        if (err) return reject(err);
+                        resolve(filteredImages);
+                    });
                 });
             })
             // apply user group processors
             .then(function(images) {
-                return Q.Promise(function(resolve, reject) {
+                return new Promise(function(resolve, reject) {
                     async.reduce(
                         options.groupBy,
                         images,
                         function(images, groupBy, next) {
                             async.map(images, function(image, done) {
-                                Q(groupBy(image))
+                                Promise.resolve(groupBy(image))
                                     .then(function(group) {
-                                        if (group) {
-                                            image.group.push(group);
-                                        }
-
+                                        if (group) image.group.push(group);
                                         done(null, image);
                                     })
                                     .catch(done);
                             }, next);
                         },
                         function(err, images) {
-                            if (err) {
-                                return reject(err);
-                            }
-
+                            if (err) return reject(err);
                             resolve(images);
                         }
                     );
@@ -181,65 +153,60 @@ var getImages = (function() {
 })();
 
 var callSpriteSmithWith = (function() {
-    var GROUP_DELIMITER = ".",
-        GROUP_MASK = "*";
+    var GROUP_DELIMITER = ".", GROUP_MASK = "*";
 
     // helper function to minimize user group names symbols collisions
     function mask(toggle) {
-        var from, to;
-
-        from = new RegExp("[" + (toggle ? GROUP_DELIMITER : GROUP_MASK) + "]", "gi");
-        to = toggle ? GROUP_MASK : GROUP_DELIMITER;
-
+        var from = new RegExp("[" + (toggle ? GROUP_DELIMITER : GROUP_MASK) + "]", "gi");
+        var to = toggle ? GROUP_MASK : GROUP_DELIMITER;
         return function(value) {
             return value.replace(from, to);
         }
     }
 
     return function(images, options) {
-        var all;
-
-        all = _.chain(images)
+        var all = _.chain(images)
             .groupBy(function(image) {
-                var tmp;
-
-                tmp = image.group.map(mask(true));
+                var tmp = image.group.map(mask(true));
                 tmp.unshift('_');
-
                 return tmp.join(GROUP_DELIMITER);
             })
             .map(function(images, tmp) {
-                var config, ratio;
-
-                config = _.merge({}, options, {
-                    src: _.pluck(images, 'path')
+                var config = _.merge({}, options, {
+                    src: images.map(function(image) {
+                        return image.path;
+                    })
                 });
 
                 // enlarge padding, if its retina
-                if (_.every(images, function(image) {return image.isRetina})) {
-                    ratio = _.chain(images).flatten('retinaRatio').unique().value();
-                    if (ratio.length == 1) {
+                if (_.every(images, function(image) { return image.isRetina; })) {
+                    var ratio = _.chain(images).flatten('retinaRatio').uniq().value();
+                    if (ratio.length === 1) {
                         config.padding = config.padding * ratio[0];
                     }
                 }
 
-                return Q.nfcall(spritesmith, config).then(function(result) {
-                    tmp = tmp.split(GROUP_DELIMITER);
-                    tmp.shift();
+                // validate config
+                try { new Spritesmith(config); }
+                catch (e) { return Promise.reject(e);}
 
-                    // append info about sprite group
-                    result.group = tmp.map(mask(false));
-
-                    return result;
+                return new Promise(function(resolve, reject) {
+                    Spritesmith.run(config, function(err, result) {
+                        if (err) return reject(err);
+                        tmp = tmp.split(GROUP_DELIMITER);
+                        tmp.shift();
+                        // append info about sprite group
+                        result.group = tmp.map(mask(false));
+                        resolve(result);
+                    });
                 });
             })
             .value();
 
-
-        return Q.all(all).then(function(results) {
-            debug.images+= images.length;
-            debug.sprites+= results.length;
-            return results;
+        return Promise.all(all).then(function(results) {
+            debug.images += images.length;
+            debug.sprites += results.length;
+            return Promise.resolve(results);
         });
     }
 })();
@@ -263,46 +230,33 @@ var updateReferencesIn = (function() {
                 });
             });
 
-            return Q(content);
+            return Promise.resolve(content);
         }
     }
 })();
 
 var exportSprites = (function() {
     function makeSpriteSheetPath(spriteSheetName, group) {
-        var path;
-
-        group || (group = []);
-
-        if (group.length == 0) {
-            return spriteSheetName;
-        }
-
-        path = spriteSheetName.split('.');
+        group = group || [];
+        if (group.length == 0) return spriteSheetName;
+        var path = spriteSheetName.split('.');
         Array.prototype.splice.apply(path, [path.length - 1, 0].concat(group));
-
         return path.join('.');
     }
 
     return function(stream, options) {
         return function(results) {
             results = results.map(function(result) {
-                var sprite;
-
                 result.path = makeSpriteSheetPath(options.spriteSheetName, result.group);
-
-                sprite = new File({
+                var sprite = new File({
                     path: result.path,
                     contents: new Buffer(result.image, 'binary')
                 });
 
                 stream.push(sprite);
-
-                options.verbose && log('Spritesheet', result.path, 'has been created');
-
-
+                options.verbose && log('Spritesheet "' + result.path + '" created');
                 return result;
-            });            
+            });
 
             return results;
         }
@@ -320,7 +274,7 @@ var exportStylesheet = function(stream, options) {
 
         stream.push(stylesheet);
 
-        options.verbose && log('Stylesheet', options.styleSheetName, 'has been created');
+        options.verbose && log('Stylesheet "' + options.styleSheetName + '" created');
     }
 };
 
@@ -338,37 +292,36 @@ var mapSpritesProperties = function(images, options) {
     }
 };
 
-module.exports = function(options) { 'use strict';
+module.exports = function(options) {
     var stream, styleSheetStream, spriteSheetStream;
 
     debug = {
         sprites: 0,
-        images:  0
+        images:    0
     };
 
     options = _.merge({
-        src:        [],
-        engine:     "pngsmith", //auto
-        algorithm:  "top-down",
-        padding:    0,
+        src: [],
+        engine: null, // auto
+        algorithm: "top-down",
+        padding: 0,
         engineOpts: {},
-        exportOpts: {
-
-        },
+        exportOpts: {},
         imgOpts: {
             timeout: 30000
         },
-
-        baseUrl:         './',
-        retina:          true,
-        styleSheetName:  null,
+        baseUrl: './',
+        retina: true,
+        styleSheetName: null,
         spriteSheetName: null,
         spriteSheetPath: null,
-        filter:          [],
-        groupBy:         [],
-        accumulate:      false,
-        verbose:         false
+        filter: [],
+        groupBy: [],
+        accumulate: false,
+        verbose: false
     }, options || {});
+
+    options.verbose = true;
 
     // check necessary properties
     ['spriteSheetName'].forEach(function(property) {
@@ -378,31 +331,29 @@ module.exports = function(options) { 'use strict';
     });
 
     // prepare filters
-    if (_.isFunction(options.filter)) {
+    if (typeof options.filter === 'function') {
         options.filter = [options.filter]
     }
 
     // prepare groupers
-    if (_.isFunction(options.groupBy)) {
+    if (typeof options.groupBy === 'function') {
         options.groupBy = [options.groupBy]
     }
 
     // add meta skip filter
     options.filter.unshift(function(image) {
-        image.meta.skip && options.verbose && log(image.path + ' has been skipped as it meta declares to skip');
+        image.meta.skip && options.verbose && log(image.path + ' skipped as it meta declares to skip');
         return !image.meta.skip;
     });
 
     // add not existing filter
     options.filter.push(function(image) {
-        var deferred = Q.defer();
-
-        fs.exists(image.path, function(exists) {
-            !exists && options.verbose && log(image.path + ' has been skipped as it does not exist!');
-            deferred.resolve(exists);
+        return new Promise(function(resolve, reject) {
+            fs.exists(image.path, function(exists) {
+                !exists && options.verbose && log(image.path + ' skipped as it does not exist!');
+                resolve(exists);
+            });
         });
-
-        return deferred.promise;
     });
 
     // add retina grouper if needed
@@ -417,14 +368,12 @@ module.exports = function(options) { 'use strict';
     }
 
     // create output streams
-    function noop(){}
-    styleSheetStream = new Readable({objectMode: true});
-    spriteSheetStream = new Readable({objectMode: true});
-    spriteSheetStream._read = styleSheetStream._read = noop;
+    styleSheetStream = through2({objectMode: true});
+    spriteSheetStream = through2({objectMode: true});
 
     var accumulatedFiles = [];
 
-    stream = through.obj(
+    stream = through2({objectMode: true},
         function(file, enc, done) {
             if (file.isNull()) {
                 this.push(file); // Do nothing if no contents
@@ -437,32 +386,32 @@ module.exports = function(options) { 'use strict';
             }
 
             if (file.isBuffer()) {
-                // postpone evaluation, if we accumulating
+                // postpone evaluation, if we are accumulating
                 if (options.accumulate) {
                     accumulatedFiles.push(file);
                     stream.push(file);
                     done();
                     return;
                 }
-
-                getImages(file, options)
-                    .then(function(images) {
-                        callSpriteSmithWith(images, options)
-                            .then(exportSprites(spriteSheetStream, options))
-                            .then(mapSpritesProperties(images, options))
-                            .then(updateReferencesIn(file))
-                            .then(exportStylesheet(styleSheetStream, _.extend({}, options, { styleSheetName: options.styleSheetName || path.basename(file.path) })))
-                            .then(function() {
-                                // pipe source file
-                                stream.push(file);
-                                done();
-                            })
-                            .catch(function(err) {
-                                stream.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
-                                done();
-                            });
-                    });
-
+                getImages(file, options).then(function(images) {
+                    callSpriteSmithWith(images, options)
+                        .then(exportSprites(spriteSheetStream, options))
+                        .then(mapSpritesProperties(images, options))
+                        .then(updateReferencesIn(file))
+                        .then(exportStylesheet(styleSheetStream, _.extend({}, options, { styleSheetName: options.styleSheetName || path.basename(file.path) })))
+                        .then(function() {
+                            // pipe source file
+                            stream.push(file);
+                            done();
+                        })
+                        .catch(function(err) {
+                            stream.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
+                            done();
+                        });
+                }).catch(function(err) {
+                    stream.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
+                    done();
+                });
 
                 return null;
             } else {
@@ -475,7 +424,7 @@ module.exports = function(options) { 'use strict';
             var pending;
 
             if (options.accumulate) {
-                pending = Q
+                pending = Promise
                     .all(accumulatedFiles.map(function(file) {
                         return getImages(file, options);
                     }))
@@ -486,7 +435,7 @@ module.exports = function(options) { 'use strict';
                             .reduce(function(images, portion) {
                                 return images.concat(portion);
                             }, [])
-                            .unique(function(image) {
+                            .uniq(function(image) {
                                 return image.path;
                             })
                             .value();
@@ -496,7 +445,7 @@ module.exports = function(options) { 'use strict';
                             .then(exportSprites(spriteSheetStream, options))
                             .then(mapSpritesProperties(images, options))
                             .then(function(results) {
-                                return Q.all(accumulatedFiles.map(function(file) {
+                                return Promise.all(accumulatedFiles.map(function(file) {
                                     return updateReferencesIn(file)(results)
                                         .then(exportStylesheet(styleSheetStream, _.extend({}, options, { styleSheetName: path.basename(file.path) })));
                                 }));
@@ -507,16 +456,14 @@ module.exports = function(options) { 'use strict';
                         done();
                     });
             } else {
-                pending = Q();
+                pending = Promise.resolve();
             }
 
             pending.then(function() {
                 // end streams
                 styleSheetStream.push(null);
                 spriteSheetStream.push(null);
-
                 log(util.format("Created %d sprite(s) from %d images, saved %s% requests", debug.sprites, debug.images, debug.images > 0 ? ((debug.sprites / debug.images) * 100).toFixed(1) : 0));
-
                 done();
             });
         }
