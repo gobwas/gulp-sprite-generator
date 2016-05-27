@@ -137,7 +137,7 @@ Tells sprite-generator to accumulate images from multiple stylesheets. This mean
 Type: `Boolean`
 Default value: `false`
 
-#### options.verbose
+#### options.setWidthAndHeight
 Type: `Boolean`
 Default value: `false`
 
