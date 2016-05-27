@@ -377,6 +377,50 @@ describe('gulp-sprite-generator', function(){
         stream.end();
     });
 
+    it("should set width and height correctly", function(done) {
+        var config, stream, errors, stylesheet;
+
+        stylesheet = {
+            fixture: path.resolve(fixtures, 'stylesheet.css'),
+            expectation: path.resolve(expectations, 'stylesheet.wh.css')
+        };
+
+        errors = [];
+
+        config = {
+            src:        [],
+            engine:     "auto",
+            algorithm:  "top-down",
+            padding:    0,
+            engineOpts: {},
+            exportOpts: {},
+
+            baseUrl:         fixtures,
+            spriteSheetName:  "sprite.png",
+            styleSheetName: "stylesheet.wh.css",
+            spriteSheetPath: null,
+            filter: [],
+            groupBy: [],
+            setWidthAndHeight: true
+        };
+
+        stream = sprite(config);
+
+        stream.css.on('data', function (file) {
+            try {
+                assert.equal(clearStr(file.contents.toString()), clearStr(fs.readFileSync(stylesheet.expectation).toString()));
+            } catch (err) {
+                errors.push(err);
+            }
+        });
+
+        stream.on('finish', function() {
+            done(errors[0]);
+        });
+
+        stream.end();
+    });
+
     it("Should pipe properly", function(done) {
         var config, stream, errors, stylesheet,
             piped;
@@ -486,4 +530,3 @@ describe('gulp-sprite-generator', function(){
     });
 
 });
-

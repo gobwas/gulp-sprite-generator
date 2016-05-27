@@ -63,17 +63,18 @@ More detailed explanation you can find on the [official page of spritesmith](htt
 
 **Plugin options** are:
 
-Property          | Necessary | Type         | Plugin default value
-------------------|-----------|--------------|-----------
-spriteSheetName   | **yes**   | `String`     | `null`
-[spriteSheetPath] | no        | `String`     | `null`
-[styleSheetName]  | np        | `String`     | `null`
-[baseUrl]         | no        | `String`     | `"./"`
-[retina]          | no        | `Boolean`    | `true`
-[filter]          | no        | `Function[]` | `[]`
-[groupBy]         | no        | `Function[]` | `[]`
-[accumulate]      | no        | `Boolean`    | `false`
-[verbose]         | no        | `Boolean`    | `false`
+Property           | Necessary | Type         | Plugin default value
+-------------------|-----------|--------------|-----------
+spriteSheetName    | **yes**   | `String`     | `null`
+[spriteSheetPath]  | no        | `String`     | `null`
+[styleSheetName]   | np        | `String`     | `null`
+[baseUrl]          | no        | `String`     | `"./"`
+[retina]           | no        | `Boolean`    | `true`
+[filter]           | no        | `Function[]` | `[]`
+[groupBy]          | no        | `Function[]` | `[]`
+[accumulate]       | no        | `Boolean`    | `false`
+[verbose]          | no        | `Boolean`    | `false`
+[setWidthAndHeight]| no        | `Boolean`    | `false`
 
 More detailed explanation is below.
 
@@ -135,6 +136,13 @@ Tells sprite-generator to accumulate images from multiple stylesheets. This mean
 #### options.verbose
 Type: `Boolean`
 Default value: `false`
+
+#### options.verbose
+Type: `Boolean`
+Default value: `false`
+
+If `true`, CSS `width` and `height` rules matching the image dimensions will be created
+in addition to the `background-size` rule.
 
 ### Filtering and grouping
 
@@ -234,4 +242,3 @@ gulp.task('sprites', function() {
 ## License
 
 MIT © [Sergey Kamardin](http://github.com/gobwas)
-

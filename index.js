@@ -245,15 +245,20 @@ var callSpriteSmithWith = (function() {
 })();
 
 var updateReferencesIn = (function() {
-    var template;
+    return function(file, options) {
+        var template = [
+            'background-image: url("<%= spriteSheetPath %>");\n    ',
+            'background-position: -<%= isRetina ? (coordinates.x / retinaRatio) : coordinates.x %>px -<%= isRetina ? (coordinates.y / retinaRatio) : coordinates.y %>px;\n    ',
+            'background-size: <%= isRetina ? (properties.width / retinaRatio) : properties.width %>px <%= isRetina ? (properties.height / retinaRatio) : properties.height %>px!important;'
+        ].join('');
 
-    template = _.template(
-        'background-image: url("<%= spriteSheetPath %>");\n    ' +
-        'background-position: -<%= isRetina ? (coordinates.x / retinaRatio) : coordinates.x %>px -<%= isRetina ? (coordinates.y / retinaRatio) : coordinates.y %>px;\n    ' +
-        'background-size: <%= isRetina ? (properties.width / retinaRatio) : properties.width %>px <%= isRetina ? (properties.height / retinaRatio) : properties.height %>px!important;'
-    );
+        if(!!options.setWidthAndHeight) {
+            template += '\n    width: <%= isRetina ? (properties.width / retinaRatio) : properties.width %>px;\n    ';
+            template += 'height: <%= isRetina ? (properties.height / retinaRatio) : properties.height %>px;';
+        }
 
-    return function(file) {
+        template = _.template(template);
+
         var content = file.contents.toString();
 
         return function(results) {
@@ -302,7 +307,7 @@ var exportSprites = (function() {
 
 
                 return result;
-            });            
+            });
 
             return results;
         }
@@ -367,7 +372,8 @@ module.exports = function(options) { 'use strict';
         filter:          [],
         groupBy:         [],
         accumulate:      false,
-        verbose:         false
+        verbose:         false,
+        setWidthAndHeight: false
     }, options || {});
 
     // check necessary properties
@@ -450,7 +456,7 @@ module.exports = function(options) { 'use strict';
                         callSpriteSmithWith(images, options)
                             .then(exportSprites(spriteSheetStream, options))
                             .then(mapSpritesProperties(images, options))
-                            .then(updateReferencesIn(file))
+                            .then(updateReferencesIn(file, options))
                             .then(exportStylesheet(styleSheetStream, _.extend({}, options, { styleSheetName: options.styleSheetName || path.basename(file.path) })))
                             .then(function() {
                                 // pipe source file
@@ -497,7 +503,7 @@ module.exports = function(options) { 'use strict';
                             .then(mapSpritesProperties(images, options))
                             .then(function(results) {
                                 return Q.all(accumulatedFiles.map(function(file) {
-                                    return updateReferencesIn(file)(results)
+                                    return updateReferencesIn(file, options)(results)
                                         .then(exportStylesheet(styleSheetStream, _.extend({}, options, { styleSheetName: path.basename(file.path) })));
                                 }));
                             });
