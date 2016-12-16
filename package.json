@@ -34,6 +34,7 @@
     "colors": "^0.6.2",
     "gulp-util": "^2.2.14",
     "lodash": "^2.4.1",
+    "pngsmith": "^0.1.5",
     "q": "^1.0.1",
     "spritesmith": "^1.0.0",
     "through2": "^0.4.1",
