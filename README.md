@@ -1,7 +1,7 @@
 # [gulp](http://gulpjs.com)-sprite-generator
 
 [![npm version](https://badge.fury.io/js/gulp-sprite-generator.svg)](http://badge.fury.io/js/gulp-sprite-generator)
-[![Build Status](https://travis-ci.org/gobwas/gulp-sprite-generator.svg?branch=master)](https://travis-ci.org/gobwas/gulp-sprite-generator)
+[![Build Status](https://travis-ci.org/showc7/gulp-sprite-generator.svg?branch=master)](https://travis-ci.org/showc7/gulp-sprite-generator)
 
 > Generate sprites from stylesheets.
 
@@ -234,4 +234,3 @@ gulp.task('sprites', function() {
 ## License
 
 MIT © [Sergey Kamardin](http://github.com/gobwas)
-
