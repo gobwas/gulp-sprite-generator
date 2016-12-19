@@ -3,8 +3,6 @@ var fs      = require('fs'),
     File    = require('vinyl'),
     path    = require('path'),
     through = require('through2'),
-//    gulpif  = require("gulp-if"),
-//    rev     = require("gulp-rev"),
     sprite  = require('./../index');
 
 
@@ -36,7 +34,6 @@ describe('gulp-sprite-generator', function(){
 
         config = {
             src:        [],
-            engine:     "auto",
             algorithm:  "top-down",
             padding:    0,
             engineOpts: {},
@@ -103,7 +100,8 @@ describe('gulp-sprite-generator', function(){
 
         config = {
             src:        [],
-            engine:     "auto",
+            //engine: require('canvassmith'),
+            //engine:     "auto",
             algorithm:  "top-down",
             padding:    0,
             engineOpts: {},
@@ -138,8 +136,8 @@ describe('gulp-sprite-generator', function(){
 
         stream.write(new File({
             base:     test,
-            path:     stylesheet.fixture,
-            contents: new Buffer(fs.readFileSync(stylesheet.fixture))
+            path:     stylesheet.fixture
+            //contents: new Buffer(fs.readFileSync(stylesheet.fixture))
         }));
 
         stream.on('finish', function() {
@@ -162,7 +160,7 @@ describe('gulp-sprite-generator', function(){
 
         config = {
             src:        [],
-            engine:     "auto",
+            //engine: require('canvassmith'),
             algorithm:  "top-down",
             padding:    0,
             engineOpts: {},
@@ -209,8 +207,7 @@ describe('gulp-sprite-generator', function(){
     });
 
     it("Should create sprite using groupBy and change refs in stylesheet", function(done) {
-        var config, stream, errors,
-            stylesheet;
+        var config, stream, errors, stylesheet;
 
         stylesheet = {
             fixture: path.resolve(fixtures, 'stylesheet.css'),
@@ -221,7 +218,7 @@ describe('gulp-sprite-generator', function(){
 
         config = {
             src:        [],
-            engine:     "auto",
+            //engine:     "auto",
             algorithm:  "top-down",
             padding:    0,
             engineOpts: {},
@@ -284,7 +281,6 @@ describe('gulp-sprite-generator', function(){
 
         config = {
             src:        [],
-            engine:     "auto",
             algorithm:  "top-down",
             padding:    0,
             engineOpts: {},
@@ -486,4 +482,3 @@ describe('gulp-sprite-generator', function(){
     });
 
 });
-

@@ -24,6 +24,7 @@ var log = function() {
     gutil.log.apply(gutil, args);
 };
 
+
 var getImages = (function() {
     var httpRegex, imageRegex, filePathRegex, pngRegex, retinaRegex;
 
@@ -98,7 +99,6 @@ var getImages = (function() {
             } else {
                 filePath = path.resolve(file.path.substring(0, file.path.lastIndexOf(path.sep)), filePath);
             }
-
             image.path = filePath;
 
             // reset lastIndex
@@ -111,11 +111,10 @@ var getImages = (function() {
 
         // reset lastIndex
         imageRegex.lastIndex = 0;
-
         // remove nulls and duplicates
         images = _.chain(images)
             .filter()
-            .unique(function(image) {
+            .uniq(function(image) {
                 return image.path;
             })
             .value();
@@ -131,9 +130,9 @@ var getImages = (function() {
                             async.filter(
                                 images,
                                 function(image, ok) {
-                                    Q(filter(image)).then(ok);
+                                    Q(filter(image)).then(function(data) {ok(null, data);});
                                 },
-                                function(images) {
+                                function(err, images) {
                                     next(null, images);
                                 }
                             );
@@ -142,7 +141,6 @@ var getImages = (function() {
                             if (err) {
                                 return reject(err);
                             }
-
                             resolve(images);
                         }
                     );
@@ -161,7 +159,6 @@ var getImages = (function() {
                                         if (group) {
                                             image.group.push(group);
                                         }
-
                                         done(null, image);
                                     })
                                     .catch(done);
@@ -171,7 +168,6 @@ var getImages = (function() {
                             if (err) {
                                 return reject(err);
                             }
-
                             resolve(images);
                         }
                     );
@@ -198,11 +194,9 @@ var callSpriteSmithWith = (function() {
 
     return function(images, options) {
         var all;
-
         all = _.chain(images)
             .groupBy(function(image) {
                 var tmp;
-
                 tmp = image.group.map(mask(true));
                 tmp.unshift('_');
 
@@ -212,26 +206,26 @@ var callSpriteSmithWith = (function() {
                 var config, ratio;
 
                 config = _.merge({}, options, {
-                    src: _.pluck(images, 'path')
+                    src: _.map(images, 'path')
                 });
-
                 // enlarge padding, if its retina
+
                 if (_.every(images, function(image) {return image.isRetina})) {
-                    ratio = _.chain(images).flatten('retinaRatio').unique().value();
+                    ratio = _.chain(images).flatten('retinaRatio').uniq().value();
                     if (ratio.length == 1) {
                         config.padding = config.padding * ratio[0];
                     }
                 }
 
-                return Q.nfcall(spritesmith, config).then(function(result) {
+                return Q.nfcall(spritesmith.run, config).then(function(result) {
                     tmp = tmp.split(GROUP_DELIMITER);
                     tmp.shift();
 
                     // append info about sprite group
                     result.group = tmp.map(mask(false));
-
                     return result;
                 });
+
             })
             .value();
 
@@ -302,7 +296,7 @@ var exportSprites = (function() {
 
 
                 return result;
-            });            
+            });
 
             return results;
         }
@@ -348,7 +342,6 @@ module.exports = function(options) { 'use strict';
 
     options = _.merge({
         src:        [],
-        engine:     "pngsmith", //auto
         algorithm:  "top-down",
         padding:    0,
         engineOpts: {},
@@ -397,11 +390,10 @@ module.exports = function(options) { 'use strict';
     options.filter.push(function(image) {
         var deferred = Q.defer();
 
-        fs.exists(image.path, function(exists) {
-            !exists && options.verbose && log(image.path + ' has been skipped as it does not exist!');
-            deferred.resolve(exists);
+        fs.access(image.path, function(err) {
+          !err && options.verbose && log(image.path + ' has been skipped as it does not exist!');
+          deferred.resolve(!err);
         });
-
         return deferred.promise;
     });
 
@@ -486,7 +478,7 @@ module.exports = function(options) { 'use strict';
                             .reduce(function(images, portion) {
                                 return images.concat(portion);
                             }, [])
-                            .unique(function(image) {
+                            .uniq(function(image) {
                                 return image.path;
                             })
                             .value();
