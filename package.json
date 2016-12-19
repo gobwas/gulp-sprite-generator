@@ -27,8 +27,7 @@
     "mocha": "*"
   },
   "scripts": {
-    "test": "mocha ./test",
-    "t": "node gulpfile.js"
+    "test": "mocha ./test"
   },
   "dependencies": {
     "async": "^2.1.4",
