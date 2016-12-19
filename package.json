@@ -22,22 +22,23 @@
   "license": "MIT",
   "repository": "https://github.com/gobwas/gulp-sprite-generator",
   "devDependencies": {
-    "mocha": "*",
     "chai": "*",
-    "gulp": "*"
+    "gulp": "*",
+    "mocha": "*",
+    "pngsmith": "^0.1.5"
   },
   "scripts": {
-    "test": "mocha ./test"
+    "test": "mocha ./test",
+    "t": "node gulpfile.js"
   },
   "dependencies": {
-    "async": "^0.2.10",
-    "colors": "^0.6.2",
-    "gulp-util": "^2.2.14",
-    "lodash": "^2.4.1",
-    "pngsmith": "^0.1.5",
-    "q": "^1.0.1",
-    "spritesmith": "^1.0.0",
-    "through2": "^0.4.1",
-    "vinyl": "^0.2.3"
+    "async": "^2.1.4",
+    "colors": "^1.1.2",
+    "gulp-util": "^3.0.7",
+    "lodash": "^4.17.2",
+    "q": "^1.4.1",
+    "spritesmith": "^3.1.0",
+    "through2": "^2.0.3",
+    "vinyl": "^2.0.1"
   }
 }

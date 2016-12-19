@@ -1,15 +1,15 @@
-.a {
-    background-image: url("sprite.png");
-    background-position: -0px -0px;
-    background-size: 25px 50px!important;
+.a{
+  background-image: url("sprite.png");
+  background-position: -0px -50px;
+  background-size: 25px 75px!important;
 }
-.b {
-    background-image: url("sprite.png");
-    background-position: -0px -25px;
-    background-size: 25px 50px!important;
+.b{
+  background-image:url("sprite.png");
+  background-position: -0px -25px;
+  background-size: 25px 75px!important;
 }
-.c {
-    background-image: url("sprite.png");
-    background-position: -0px -0px;
-    background-size: 25px 50px!important;
+.c{
+background-image:url("sprite.png");
+background-position: -0px -50px;
+background-size: 25px 75px!important;
 }
